@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>纸飞机积分计算器</title>
+    <style>
+        .form-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            margin-right: 10px;
+        }
+        .form-group input,
+        .form-group select {
+            margin-right: 10px;
+        }
+        .collapsible {
+            cursor: pointer;
+        }
+        .collapsed {
+            display: none;
+        }
+    </style>
+    <script>
+        var Product = /** @class */ (function () {
+            function Product(name, points, dailyQuantity, purchase) {
+                if (dailyQuantity === void 0) { dailyQuantity = 0; }
+                this.name = name;
+                this.points = points;
+                this.purchase = purchase;
+                this.dailyQuantity = dailyQuantity;
+            }
+            Product.prototype.generateSelectOptions = function (selected) {
+                if (selected === void 0) { selected = -1; }
+                if (this.purchase) {
+                    return this.purchase.generateSelectOptions(this.points, selected);
+                }
+                else {
+                    return '';
+                }
+            };
+            Product.prototype.calculatePoints = function (quantity) {
+                var points = new Points(this.name, quantity);
+                points.points = Math.floor(this.points * quantity);
+                points.cost = 0;
+                points.explain = points.genExplain();
+                return points;
+            };
+            return Product;
+        }());
+        var Purchase = /** @class */ (function () {
+            function Purchase(quantity, costs) {
+                this.quantity = quantity;
+                this.costs = costs;
+            }
+            Purchase.prototype.generateSelectOptions = function (points, selected) {
+                if (selected === void 0) { selected = -1; }
+                var options = '<option value="0">不购买</option>';
+                for (var i = 1; i < this.costs.length; i++) {
+                    var cost = this.costs[i];
+                    var costPerPoint = (cost - this.costs[i - 1]) / (this.quantity * points);
+                    var discountStr = "";
+                    if (costPerPoint < 10) {
+                        discountStr = costPerPoint.toLocaleString('en-US', {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 1
+                        });
+                        discountStr = "".concat(discountStr, "\u6298");
+                    }
+                    else if (costPerPoint == 10) {
+                        discountStr = "原价";
+                    }
+                    else {
+                        discountStr = (costPerPoint / 10).toLocaleString('en-US', {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 1
+                        });
+                        discountStr = "".concat(discountStr, "\u500D");
+                    }
+                    if (i == selected) {
+                        options += "<option value=\"".concat(i, "\" selected>").concat(i, "\u6B21,").concat(discountStr, "</option>");
+                    }
+                    else {
+                        options += "<option value=\"".concat(i, "\">").concat(i, "\u6B21,").concat(discountStr, "</option>");
+                    }
+                }
+                return options;
+            };
+            return Purchase;
+        }());
+        var ProductRune = new Product("卢恩文字", 0.1, 480, new Purchase(100, [
+            0, 20, 50, 100, 180, 280, 380, 480, 630, 780, 930, 1080, 1280, 1480, 1680, 1880
+        ]));
+        var ProductEnergyCrystal = new Product("充能魔晶", 3);
+        var SkillCard = new Product("技能抽", 10);
+        var PedCard = new Product("宠物抽", 15);
+        var ProductEnergy = new Product("秘宝能源", 0.3, 240, new Purchase(50, [
+            0, 30, 80, 160, 280, 430, 580, 730, 950, 1170, 1390, 1610, 1910, 2210, 2510, 2810
+        ]));
+        var ProductRiding = new Product("骑宠门票", 2, 25, new Purchase(5, [
+            0, 30, 60, 110, 190, 310, 460, 660, 910, 1210
+        ]));
+        var ProductPack1 = new Product("自选礼包1", 150, 0, new Purchase(1, [
+            0, 1000
+        ]));
+        var ProductPack2 = new Product("自选礼包2", 225, 0, new Purchase(1, [
+            0, 1800
+        ]));
+        var ProductWater = new Product("旅团浇水", 0, 0, new Purchase(1, [
+            0, 0, 20, 70,
+        ]));
+        var LevelGiftPoints = /** @class */ (function () {
+            function LevelGiftPoints(pointLevel, points) {
+                this.pointLevel = pointLevel;
+                this.points = points;
+            }
+            return LevelGiftPoints;
+        }());
+        var Resources = /** @class */ (function () {
+            function Resources(days, currentPoints, diamond, dailyCost, energy, energyPurchaseTimes, energyCrystal, rune, runePurchaseTimes, riding, ridingPurchaseTimes, skillCard, pedCard, pack1, pack2) {
+                this.days = days;
+                this.currentPoints = currentPoints;
+                this.diamond = diamond;
+                this.dailyCost = dailyCost;
+                this.energy = energy;
+                this.energyPurchaseTimes = energyPurchaseTimes;
+                this.energyCrystal = energyCrystal;
+                this.rune = rune;
+                this.runePurchaseTimes = runePurchaseTimes;
+                this.riding = riding;
+                this.ridingPurchaseTimes = ridingPurchaseTimes;
+                this.skillCard = skillCard;
+                this.pedCard = pedCard;
+                if (pack1) {
+                    this.pack1 = Math.floor(days / 7);
+                }
+                else {
+                    this.pack1 = 0;
+                }
+                if (pack2) {
+                    this.pack2 = Math.floor(days / 7);
+                }
+                else {
+                    this.pack2 = 0;
+                }
+            }
+            Resources.prototype.calculate = function (levelPoints) {
+                var result = new Result();
+                if (this.days > 0) {
+                    var zfjDays = Math.min(7, this.days); // 活动天数
+                    if (this.currentPoints > 0) {
+                        var currentPoints = new Points("现有积分", 0, this.currentPoints);
+                        currentPoints.explain = "\u73B0\u6709 ".concat(this.currentPoints, " \u79EF\u5206");
+                        result.points.push(currentPoints);
+                    }
+                    var dailyPoints = new Points("每日任务积分", 0);
+                    dailyPoints.points = 100 * zfjDays;
+                    dailyPoints.explain = "\u6BCF\u65E5\u4EFB\u52A1 100 \u79EF\u5206 * ".concat(zfjDays, " \u5929, \u5171 ").concat(dailyPoints.points, " \u79EF\u5206");
+                    result.points.push(dailyPoints);
+                    if (this.pack1 > 0) {
+                        var pack1Points = ProductPack1.calculatePoints(this.pack1);
+                        pack1Points.cost = ProductPack1.purchase.costs[1] * this.pack1;
+                        pack1Points.explain = pack1Points.genExplain();
+                        result.points.push(pack1Points);
+                    }
+                    if (this.pack2 > 0) {
+                        var pack2Points = ProductPack2.calculatePoints(this.pack2);
+                        pack2Points.cost = ProductPack2.purchase.costs[1] * this.pack2;
+                        pack2Points.explain = pack2Points.genExplain();
+                        result.points.push(pack2Points);
+                    }
+                    var freeEnergyQuantity = zfjDays * ProductEnergy.dailyQuantity;
+                    if (this.energyPurchaseTimes > 0) {
+                        var purchaseEnergyQuantity = this.energyPurchaseTimes * zfjDays * ProductEnergy.purchase.quantity;
+                        var purchaseEnergyPoints = ProductEnergy.calculatePoints(purchaseEnergyQuantity + freeEnergyQuantity);
+                        purchaseEnergyPoints.cost = ProductEnergy.purchase.costs[this.energyPurchaseTimes] * zfjDays;
+                        purchaseEnergyPoints.explain = "\u6BCF\u65E5".concat(purchaseEnergyPoints.name, " (\u514D\u8D39 ").concat(ProductEnergy.dailyQuantity, " \u4E2A + \u8D2D\u4E70 ").concat(ProductEnergy.purchase.quantity, " \u4E2A * ").concat(this.energyPurchaseTimes, " \u6B21) * ").concat(zfjDays, " \u5929");
+                        purchaseEnergyPoints.explain += ", ".concat(purchaseEnergyQuantity, " \u80FD\u91CF, \u5171 ").concat(purchaseEnergyPoints.points, " \u79EF\u5206");
+                        purchaseEnergyPoints.explain += ", \u82B1\u8D39 ".concat(purchaseEnergyPoints.cost, " \u661F\u94BB");
+                        result.points.push(purchaseEnergyPoints);
+                    }
+                    else {
+                        var freeEnergyPoints = ProductEnergy.calculatePoints(freeEnergyQuantity);
+                        freeEnergyPoints.explain = "\u6BCF\u65E5".concat(freeEnergyPoints.name, " \u514D\u8D39 ").concat(ProductEnergy.dailyQuantity, " * ").concat(zfjDays, " \u5929, \u5171 ").concat(freeEnergyPoints.points, " \u79EF\u5206");
+                        result.points.push(freeEnergyPoints);
+                    }
+                    var tips = "";
+                    if (this.days > 7) {
+                        tips = "(存到活动开启再使用)";
+                    }
+                    var freeRuneQuantity = this.days * ProductRune.dailyQuantity;
+                    if (this.runePurchaseTimes > 0) {
+                        var purchaseRuneQuantity = this.runePurchaseTimes * this.days * ProductRune.purchase.quantity;
+                        var purchaseRunePoints = ProductRune.calculatePoints(purchaseRuneQuantity + freeRuneQuantity);
+                        purchaseRunePoints.cost = ProductRune.purchase.costs[this.runePurchaseTimes] * this.days;
+                        purchaseRunePoints.explain = "\u6BCF\u65E5".concat(purchaseRunePoints.name, " (\u514D\u8D39 ").concat(ProductRune.dailyQuantity, " + \u8D2D\u4E70 ").concat(ProductRune.purchase.quantity, " \u4E2A * ").concat(this.runePurchaseTimes, " \u6B21) * ").concat(this.days, " \u5929").concat(tips);
+                        purchaseRunePoints.explain += ", ".concat(purchaseRuneQuantity, " \u5362\u6069\u6587\u5B57, \u5171 ").concat(purchaseRunePoints.points, " \u79EF\u5206");
+                        purchaseRunePoints.explain += ", \u82B1\u8D39 ".concat(purchaseRunePoints.cost, " \u661F\u94BB");
+                        result.points.push(purchaseRunePoints);
+                    }
+                    else {
+                        var freeRunePoints = ProductRune.calculatePoints(freeRuneQuantity);
+                        freeRunePoints.explain = "\u6BCF\u65E5".concat(freeRunePoints.name, " \u514D\u8D39 ").concat(ProductRune.dailyQuantity, " * ").concat(this.days, " \u5929").concat(tips, ", \u5171 ").concat(freeRunePoints.points, " \u79EF\u5206");
+                        result.points.push(freeRunePoints);
+                    }
+                    var freeRidingQuantity = this.days * ProductRiding.dailyQuantity;
+                    if (this.ridingPurchaseTimes > 0) {
+                        var purchaseRidingQuantity = this.ridingPurchaseTimes * this.days * ProductRiding.purchase.quantity;
+                        var purchaseRidingPoints = ProductRiding.calculatePoints(purchaseRidingQuantity + freeRidingQuantity);
+                        purchaseRidingPoints.cost = ProductRiding.purchase.costs[this.ridingPurchaseTimes] * this.days;
+                        purchaseRidingPoints.explain = "\u6BCF\u65E5".concat(purchaseRidingPoints.name, " (\u514D\u8D39 ").concat(ProductRiding.dailyQuantity, " + \u8D2D\u4E70 ").concat(ProductRiding.purchase.quantity, " \u5F20 * ").concat(this.ridingPurchaseTimes, " \u6B21) * ").concat(this.days, " \u5929").concat(tips);
+                        purchaseRidingPoints.explain += ", ".concat(purchaseRidingQuantity, " \u9A91\u5BA0\u95E8\u7968, \u5171 ").concat(purchaseRidingPoints.points, " \u79EF\u5206");
+                        purchaseRidingPoints.explain += ", \u82B1\u8D39 ".concat(purchaseRidingPoints.cost, " \u661F\u94BB");
+                        result.points.push(purchaseRidingPoints);
+                    }
+                    else {
+                        var freeRidingPoints = ProductRiding.calculatePoints(freeRidingQuantity);
+                        freeRidingPoints.explain = "\u6BCF\u65E5".concat(freeRidingPoints.name, " \u514D\u8D39 ").concat(ProductRiding.dailyQuantity, " * ").concat(this.days, " \u5929").concat(tips, ", \u5171 ").concat(freeRidingPoints.points, " \u79EF\u5206");
+                        result.points.push(freeRidingPoints);
+                    }
+                    if (this.dailyCost !== 0) {
+                        var dailyCostPoints = new Points("每日开销", 0);
+                        dailyCostPoints.cost = this.dailyCost * this.days;
+                        dailyCostPoints.explain = "\u6BCF\u65E5\u5F00\u9500 ".concat(this.dailyCost, " \u661F\u94BB * ").concat(this.days, " \u5929, \u82B1\u8D39 ").concat(dailyCostPoints.cost, " \u661F\u94BB");
+                        result.points.push(dailyCostPoints);
+                    }
+                }
+                if (this.skillCard > 0) {
+                    result.points.push(SkillCard.calculatePoints(this.skillCard));
+                }
+                if (this.pedCard > 0) {
+                    result.points.push(PedCard.calculatePoints(this.pedCard));
+                }
+                if (this.rune > 0) {
+                    result.points.push(ProductRune.calculatePoints(this.rune));
+                }
+                if (this.riding > 0) {
+                    result.points.push(ProductRiding.calculatePoints(this.riding));
+                }
+                if (this.energy > 0) {
+                    result.points.push(ProductEnergy.calculatePoints(this.energy));
+                }
+                if (this.energyCrystal > 0) {
+                    result.points.push(ProductEnergyCrystal.calculatePoints(this.energyCrystal));
+                }
+                // 剩余的星钻换算成积分
+                var remainDiamond = Math.floor((this.diamond - result.totalPoints().cost) / 50) * 50;
+                if (remainDiamond > 0) {
+                    var diamondPoints = new Points("\u5269\u4F59\u661F\u94BB", 0, remainDiamond);
+                    diamondPoints.cost = remainDiamond;
+                    diamondPoints.points = remainDiamond / 10;
+                    diamondPoints.explain = "".concat(remainDiamond, " \u661F\u94BB\u7528\u6765\u8D2D\u4E70\u6280\u80FD\u62BD\u6216\u8005\u5BA0\u7269\u62BD, \u5171 ").concat(diamondPoints.points, " \u79EF\u5206");
+                    result.points.push(diamondPoints);
+                }
+                levelPoints.sort(function (a, b) { return a.pointLevel - b.pointLevel; });
+                var finalLevelPoints = [];
+                for (var i = 0; i < 3; i++) {
+                    for (var j = 0; j < levelPoints.length; j++) {
+                        var item = levelPoints[j];
+                        finalLevelPoints.push(new LevelGiftPoints(item.pointLevel + i * 3000, item.points));
+                    }
+                }
+                var points = this.currentPoints;
+                var taskPoints = new Points("纸飞机积分奖励礼品");
+                result.points.push(taskPoints);
+                while (true) {
+                    var preIdx = finalLevelPoints.findIndex(function (item) { return item.pointLevel >= points; });
+                    console.log("preIdx", preIdx, points);
+                    if (preIdx == -1) {
+                        break;
+                    }
+                    var curIdx = finalLevelPoints.findIndex(function (item) { return item.pointLevel >= result.totalPoints().points; });
+                    if (curIdx == -1) {
+                        curIdx = finalLevelPoints.length;
+                    }
+                    console.log("curIdx", curIdx, result.totalPoints().points);
+                    if (curIdx == preIdx) {
+                        break;
+                    }
+                    // 计算积分
+                    for (var i = preIdx; i < curIdx; i++) {
+                        taskPoints.points += finalLevelPoints[i].points;
+                    }
+                    points = result.totalPoints().points;
+                }
+                taskPoints.explain = "\u7EB8\u98DE\u673A\u79EF\u5206\u5956\u52B1\u793C\u54C1, \u5171 ".concat(taskPoints.points, " \u79EF\u5206");
+                return result;
+            };
+            return Resources;
+        }());
+        var Points = /** @class */ (function () {
+            function Points(name, quantity, points, cost) {
+                if (quantity === void 0) { quantity = 0; }
+                if (points === void 0) { points = 0; }
+                if (cost === void 0) { cost = 0; }
+                this.name = name;
+                this.quantity = quantity;
+                this.points = points;
+                this.cost = cost;
+                this.explain = this.genExplain();
+            }
+            Points.prototype.genExplain = function () {
+                var s = "".concat(this.name, " * ").concat(this.quantity, " \u5171 ").concat(this.points, " \u79EF\u5206");
+                if (this.cost > 0) {
+                    s += ", \u82B1\u8D39 ".concat(this.cost, " \u661F\u94BB");
+                }
+                return s;
+            };
+            return Points;
+        }());
+        var Result = /** @class */ (function () {
+            function Result() {
+                this.points = [];
+            }
+            Result.prototype.totalPoints = function () {
+                var total = new Points("总计");
+                this.points.forEach(function (p) {
+                    total.points += p.points;
+                    total.cost += p.cost;
+                });
+                return total;
+            };
+            return Result;
+        }());
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById("energyPurchaseTimes").innerHTML = ProductEnergy.generateSelectOptions(3);
+            document.getElementById("ridingPurchaseTimes").innerHTML = ProductRiding.generateSelectOptions(3);
+            document.getElementById("runePurchaseTimes").innerHTML = ProductRune.generateSelectOptions(3);
+        });
+    </script>
+</head>
+<body>
+<h1>纸飞机积分计算器</h1>
+
+<form id="pointsForm">
+    <fieldset>
+        <legend>固定资源</legend>
+        <label for="pet">宠物抽:</label>
+        <input type="number" value="0" id="pet" name="pet" required><br><br>
+
+        <label for="skill">技能抽:</label>
+        <input type="number" value="0" id="skill" name="skill" required><br><br>
+
+        <label for="energyCrystal">能源结晶:</label>
+        <input type="number" value="0" id="energyCrystal" name="energyCrystal" required><br><br>
+
+        <span>以下购买折扣都是按照原价 1积分/10星钻 换算的, 推荐都购买 3 次, 积分不够可以买 4 次</span><br><br>
+
+        <label for="rune">卢恩文字:</label>
+        <input type="number" value="0" id="rune" name="rune" required>
+        <label for="runePurchaseTimes">每日购买次数:</label>
+        <select id="runePurchaseTimes" name="runePurchaseTimes" required>
+        </select><br><br>
+
+        <label for="energy">秘宝能源:</label>
+        <input type="number" value="0" id="energy" name="energy" required>
+        <label for="energyPurchaseTimes">每日购买次数:</label>
+        <select id="energyPurchaseTimes" name="energyPurchaseTimes" required>
+        </select><br><br>
+
+        <label for="riding">骑宠门票:</label>
+        <input type="number" value="0" id="riding" name="riding" required>
+        <label for="ridingPurchaseTimes">每日购买次数:</label>
+        <select id="ridingPurchaseTimes" name="ridingPurchaseTimes" required>
+        </select><br><br>
+    </fieldset>
+
+    <fieldset>
+        <legend>浮动资源</legend>
+        <label for="diamond">现有星钻:</label>
+        <input type="number" id="diamond" name="diamond" value="0" required><br><br>
+        <span>旅团浇水两次 20 + 商店打折零食与突破石 190 - 免费礼包 50 - 开服礼包 10 - 邀请分享 30 = 120</span><br>
+        <span>具体每日星钻开销请根据你的实际情况调整，开销为正数，收入为负数(例如月卡 -100)</span><br>
+        <label for="dailyCost">日常星钻开销:</label>
+        <input type="number" id="dailyCost" name="dailyCost" required value="120"><br><br>
+
+        <span>如果本期的礼包还没购买,请买完后换算成资源再重新计算.</span><br>
+        <input type="checkbox" id="pack1" name="pack1" value="1" checked required>
+        <label for="pack1">购买自选礼包1(1000星钻,150积分,6.7折)</label><br>
+        <input type="checkbox" id="pack2" name="pack2" value="1" checked required>
+        <label for="pack2">购买自选礼包2(1800星钻,225积分,8折)</label><br><br>
+
+        <label for="days">多少天后结束:</label>
+        <input type="number" id="days" name="days" value="7" required><br><br>
+
+
+    </fieldset>
+
+    <fieldset>
+        <legend>纸飞机积分奖励</legend>
+        <span>纸飞机每达到一定积分可领取奖品，如果这些奖品是宠物抽、技能抽等能够换算成积分的物品。</span><br>
+        <span>那么你可以将其对应的积分填到下面对应的位置，这样能够更加准确地计算你的积分。</span><br>
+        <span>请查看具体的纸飞机活动，并将奖品换算成相应的积分。(一般来说三轮的奖品是一样的)</span><br><br>
+        <label for="p100">100积分对应奖品换算积分</label>
+        <input type="number" id="p100" name="p100" value="0" required><br>
+        <label for="p300">300积分对应奖品换算积分</label>
+        <input type="number" id="p300" name="p300" value="0" required><br>
+        <label for="p600">600积分对应奖品换算积分</label>
+        <input type="number" id="p600" name="p600" value="0" required><br>
+        <label for="p1000">1000积分对应奖品换算积分</label>
+        <input type="number" id="p1000" name="p1000" value="0" required><br>
+        <label for="p1500">1500积分对应奖品换算积分</label>
+        <input type="number" id="p1500" name="p1500" value="0" required><br>
+        <label for="p2200">2200积分对应奖品换算积分</label>
+        <input type="number" id="p2200" name="p2200" value="0" required><br>
+        <label for="p3000">3000积分对应奖品换算积分</label>
+        <input type="number" id="p3000" name="p3000" value="0" required><br><br>
+
+        <label for="pcurrent">现有积分(每完成一轮记得加3000)</label>
+        <input type="number" id="pcurrent" name="pcurrent" value="0" required><br>
+    </fieldset>
+
+    <button type="button" onclick="calculatePoints()">计算积分</button>
+</form>
+
+<h2>积分结果: <br></h2>
+<span id="pointsResult"></span><br><br>
+<span id="all_points" style="font-weight: bold;"></span><br>
+<span id="cost_result" style="font-weight: bold;"></span><br>
+
+<script>
+
+
+    function calculatePoints() {
+        const diamond = parseInt(document.getElementById('diamond').value);
+        const days = parseInt(document.getElementById('days').value);
+        const pet = parseInt(document.getElementById('pet').value);
+        const skill = parseInt(document.getElementById('skill').value);
+        const rune = parseInt(document.getElementById('rune').value);
+        const runePurchaseTimes = parseInt(document.getElementById('runePurchaseTimes').value);
+        const energyCrystal = parseInt(document.getElementById('energyCrystal').value);
+        const energy = parseInt(document.getElementById('energy').value);
+        const energyPurchaseTimes = parseInt(document.getElementById('energyPurchaseTimes').value);
+        const riding = parseInt(document.getElementById('riding').value);
+        const ridingPurchaseTimes = parseInt(document.getElementById('ridingPurchaseTimes').value);
+        const pack1 = document.getElementById('pack1').checked ? 1 : 0;
+        const pack2 = document.getElementById('pack2').checked ? 1 : 0;
+        const currentPoints = parseInt(document.getElementById("pcurrent").value);
+        const dailyCost = parseInt(document.getElementById("dailyCost").value);
+
+        const levelPoints = [
+            {pointLevel: 100, points: parseInt(document.getElementById("p100").value)},
+            {pointLevel: 300, points: parseInt(document.getElementById("p300").value)},
+            {pointLevel: 600, points: parseInt(document.getElementById("p600").value)},
+            {pointLevel: 1000, points: parseInt(document.getElementById("p1000").value)},
+            {pointLevel: 1500, points: parseInt(document.getElementById("p1500").value)},
+            {pointLevel: 2200, points: parseInt(document.getElementById("p2200").value)},
+            {pointLevel: 3000, points: parseInt(document.getElementById("p3000").value)},
+        ];
+
+        let resource = new Resources(days, currentPoints, diamond, dailyCost, energy, energyPurchaseTimes , energyCrystal, rune, runePurchaseTimes, riding, ridingPurchaseTimes , skill, pet, pack1, pack2);
+
+        const result = resource.calculate(levelPoints);
+        document.getElementById('pointsResult').innerText = result.points.map(p => p.explain).join('\n');
+        let total = result.totalPoints();
+        document.getElementById('all_points').innerText = "总积分：" + total.points;
+        let cost = "总花费：" + total.cost + "星钻";
+        let remainDiamond = diamond - total.cost;
+        if (remainDiamond < 0) {
+            cost += "，欠缺" + (-remainDiamond) + "星钻\n";
+        } else {
+            cost += "，剩余" + remainDiamond + "星钻\n";
+        }
+        document.getElementById('cost_result').innerText = cost;
+    }
+</script>
+</body>
+</html>
