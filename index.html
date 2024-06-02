@@ -178,13 +178,13 @@
                         var purchaseEnergyPoints = ProductEnergy.calculatePoints(purchaseEnergyQuantity + freeEnergyQuantity);
                         purchaseEnergyPoints.cost = ProductEnergy.purchase.costs[this.energyPurchaseTimes] * zfjDays;
                         purchaseEnergyPoints.explain = "\u6BCF\u65E5".concat(purchaseEnergyPoints.name, " (\u514D\u8D39 ").concat(ProductEnergy.dailyQuantity, " \u4E2A + \u8D2D\u4E70 ").concat(ProductEnergy.purchase.quantity, " \u4E2A * ").concat(this.energyPurchaseTimes, " \u6B21) * ").concat(zfjDays, " \u5929");
-                        purchaseEnergyPoints.explain += ", ".concat(purchaseEnergyQuantity, " \u80FD\u91CF, \u5171 ").concat(purchaseEnergyPoints.points, " \u79EF\u5206");
+                        purchaseEnergyPoints.explain += ", ".concat(purchaseEnergyQuantity + freeEnergyQuantity, " \u80FD\u91CF, \u5171 ").concat(purchaseEnergyPoints.points, " \u79EF\u5206");
                         purchaseEnergyPoints.explain += ", \u82B1\u8D39 ".concat(purchaseEnergyPoints.cost, " \u661F\u94BB");
                         result.points.push(purchaseEnergyPoints);
                     }
                     else {
                         var freeEnergyPoints = ProductEnergy.calculatePoints(freeEnergyQuantity);
-                        freeEnergyPoints.explain = "\u6BCF\u65E5".concat(freeEnergyPoints.name, " \u514D\u8D39 ").concat(ProductEnergy.dailyQuantity, " * ").concat(zfjDays, " \u5929, \u5171 ").concat(freeEnergyPoints.points, " \u79EF\u5206");
+                        freeEnergyPoints.explain = "\u6BCF\u65E5".concat(freeEnergyPoints.name, " \u514D\u8D39 ").concat(ProductEnergy.dailyQuantity, " * ").concat(zfjDays, " \u5929, \u5171 ").concat(freeEnergyQuantity, " \u4E2A, ").concat(freeEnergyPoints.points, " \u79EF\u5206");
                         result.points.push(freeEnergyPoints);
                     }
                     var tips = "";
@@ -197,13 +197,13 @@
                         var purchaseRunePoints = ProductRune.calculatePoints(purchaseRuneQuantity + freeRuneQuantity);
                         purchaseRunePoints.cost = ProductRune.purchase.costs[this.runePurchaseTimes] * this.days;
                         purchaseRunePoints.explain = "\u6BCF\u65E5".concat(purchaseRunePoints.name, " (\u514D\u8D39 ").concat(ProductRune.dailyQuantity, " + \u8D2D\u4E70 ").concat(ProductRune.purchase.quantity, " \u4E2A * ").concat(this.runePurchaseTimes, " \u6B21) * ").concat(this.days, " \u5929").concat(tips);
-                        purchaseRunePoints.explain += ", ".concat(purchaseRuneQuantity, " \u5362\u6069\u6587\u5B57, \u5171 ").concat(purchaseRunePoints.points, " \u79EF\u5206");
+                        purchaseRunePoints.explain += ", ".concat(purchaseRuneQuantity + freeRuneQuantity, " \u5362\u6069\u6587\u5B57, \u5171 ").concat(purchaseRunePoints.points, " \u79EF\u5206");
                         purchaseRunePoints.explain += ", \u82B1\u8D39 ".concat(purchaseRunePoints.cost, " \u661F\u94BB");
                         result.points.push(purchaseRunePoints);
                     }
                     else {
                         var freeRunePoints = ProductRune.calculatePoints(freeRuneQuantity);
-                        freeRunePoints.explain = "\u6BCF\u65E5".concat(freeRunePoints.name, " \u514D\u8D39 ").concat(ProductRune.dailyQuantity, " * ").concat(this.days, " \u5929").concat(tips, ", \u5171 ").concat(freeRunePoints.points, " \u79EF\u5206");
+                        freeRunePoints.explain = "\u6BCF\u65E5".concat(freeRunePoints.name, " \u514D\u8D39 ").concat(ProductRune.dailyQuantity, " * ").concat(this.days, " \u5929").concat(tips, ", \u5171 ").concat(freeRuneQuantity, " \u4E2A, ").concat(freeRunePoints.points, " \u79EF\u5206");
                         result.points.push(freeRunePoints);
                     }
                     var freeRidingQuantity = this.days * ProductRiding.dailyQuantity;
@@ -212,13 +212,13 @@
                         var purchaseRidingPoints = ProductRiding.calculatePoints(purchaseRidingQuantity + freeRidingQuantity);
                         purchaseRidingPoints.cost = ProductRiding.purchase.costs[this.ridingPurchaseTimes] * this.days;
                         purchaseRidingPoints.explain = "\u6BCF\u65E5".concat(purchaseRidingPoints.name, " (\u514D\u8D39 ").concat(ProductRiding.dailyQuantity, " + \u8D2D\u4E70 ").concat(ProductRiding.purchase.quantity, " \u5F20 * ").concat(this.ridingPurchaseTimes, " \u6B21) * ").concat(this.days, " \u5929").concat(tips);
-                        purchaseRidingPoints.explain += ", ".concat(purchaseRidingQuantity, " \u9A91\u5BA0\u95E8\u7968, \u5171 ").concat(purchaseRidingPoints.points, " \u79EF\u5206");
+                        purchaseRidingPoints.explain += ", ".concat(purchaseRidingQuantity + freeRidingQuantity, " \u9A91\u5BA0\u95E8\u7968, \u5171 ").concat(purchaseRidingPoints.points, " \u79EF\u5206");
                         purchaseRidingPoints.explain += ", \u82B1\u8D39 ".concat(purchaseRidingPoints.cost, " \u661F\u94BB");
                         result.points.push(purchaseRidingPoints);
                     }
                     else {
                         var freeRidingPoints = ProductRiding.calculatePoints(freeRidingQuantity);
-                        freeRidingPoints.explain = "\u6BCF\u65E5".concat(freeRidingPoints.name, " \u514D\u8D39 ").concat(ProductRiding.dailyQuantity, " * ").concat(this.days, " \u5929").concat(tips, ", \u5171 ").concat(freeRidingPoints.points, " \u79EF\u5206");
+                        freeRidingPoints.explain = "\u6BCF\u65E5".concat(freeRidingPoints.name, " \u514D\u8D39 ").concat(ProductRiding.dailyQuantity, " * ").concat(this.days, " \u5929").concat(tips, ", \u5171 ").concat(freeRidingQuantity, " \u5F20, ").concat(freeRidingPoints.points, " \u79EF\u5206");
                         result.points.push(freeRidingPoints);
                     }
                     if (this.dailyCost !== 0) {
