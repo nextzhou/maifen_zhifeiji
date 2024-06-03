@@ -291,7 +291,7 @@
                     weekTips.explain = "\n每周任务不包含本周收益, 实际收益可能会更多";
                     result.points.push(weekTips);
                     if (this.nightmareDiamond > 0) {
-                        var nightmareDiamond = new Points("每周噩梦任务星钻", 0);
+                        var nightmareDiamond = new Points("每周梦魇狂潮任务星钻", 0);
                         nightmareDiamond.cost = -this.nightmareDiamond * weeks;
                         nightmareDiamond.explain = "\u6BCF\u5468\u5669\u68A6\u4EFB\u52A1 ".concat(this.nightmareDiamond, " \u661F\u94BB * ").concat(weeks, " \u5468, \u5171\u83B7\u5F97 ").concat(-nightmareDiamond.cost, " \u661F\u94BB");
                         result.points.push(nightmareDiamond);
@@ -521,7 +521,7 @@
 
         <input type="checkbox" id="subscriptionCard" name="subscriptionCard" value="0" required> <label for="subscriptionCard">有小月卡</label><br><br>
 
-        <label for="nightmareDiamond">每周噩梦任务星钻奖励:</label>
+        <label for="nightmareDiamond">每周梦魇狂潮任务星钻奖励:</label>
         <input type="number" id="nightmareDiamond" name="nightmareDiamond" value="300" required><br>
         <span>300是比较偏保守的数目，你可以参考你的实际情况填写</span><br><br>
 
