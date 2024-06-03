@@ -46,7 +46,7 @@
                 var points = new Points(this.name, quantity);
                 points.points = Math.floor(this.points * quantity);
                 points.cost = 0;
-                points.explain = points.genExplain();
+                points.updateExplain();
                 return points;
             };
             return Product;
@@ -61,7 +61,21 @@
                 var options = '<option value="0">不购买</option>';
                 for (var i = 1; i < this.costs.length; i++) {
                     var cost = this.costs[i];
-                    var costPerPoint = (cost - this.costs[i - 1]) / (this.quantity * points);
+                    var thisCost = cost - this.costs[i - 1];
+                    var thisCostStr = "".concat(thisCost, "\u661F\u94BB");
+                    if (thisCost == 0) {
+                        thisCostStr = "免费";
+                    }
+                    if (points == 0) {
+                        if (i == selected) {
+                            options += "<option value=\"".concat(i, "\" selected>").concat(i, "\u6B21,").concat(thisCostStr, "</option>");
+                        }
+                        else {
+                            options += "<option value=\"".concat(i, "\">").concat(i, "\u6B21,").concat(thisCostStr, "</option>");
+                        }
+                        continue;
+                    }
+                    var costPerPoint = thisCost / (this.quantity * points);
                     var discountStr = "";
                     if (costPerPoint < 10) {
                         discountStr = costPerPoint.toLocaleString('en-US', {
@@ -81,10 +95,10 @@
                         discountStr = "".concat(discountStr, "\u500D");
                     }
                     if (i == selected) {
-                        options += "<option value=\"".concat(i, "\" selected>").concat(i, "\u6B21,").concat(discountStr, "</option>");
+                        options += "<option value=\"".concat(i, "\" selected>").concat(i, "\u6B21,").concat(thisCostStr, ",").concat(discountStr, "</option>");
                     }
                     else {
-                        options += "<option value=\"".concat(i, "\">").concat(i, "\u6B21,").concat(discountStr, "</option>");
+                        options += "<option value=\"".concat(i, "\">").concat(i, "\u6B21,").concat(thisCostStr, ",").concat(discountStr, "</option>");
                     }
                 }
                 return options;
@@ -110,7 +124,10 @@
             0, 1800
         ]));
         var ProductWater = new Product("旅团浇水", 0, 0, new Purchase(1, [
-            0, 0, 20, 70,
+            0, 0, 20, 70, 170, 270
+        ]));
+        var ProductInstance = new Product("秘境/副本体力", 0, 0, new Purchase(1, [
+            0, 20, 40, 60,
         ]));
         var LevelGiftPoints = /** @class */ (function () {
             function LevelGiftPoints(pointLevel, points) {
@@ -120,7 +137,7 @@
             return LevelGiftPoints;
         }());
         var Resources = /** @class */ (function () {
-            function Resources(days, currentPoints, diamond, dailyCost, energy, energyPurchaseTimes, energyCrystal, rune, runePurchaseTimes, riding, ridingPurchaseTimes, skillCard, pedCard, pack1, pack2) {
+            function Resources(days, currentPoints, diamond, dailyCost, energy, energyPurchaseTimes, energyCrystal, rune, runePurchaseTimes, riding, ridingPurchaseTimes, skillCard, pedCard, pack1, pack2, subscriptionCard, water, instance, nightmareDiamond) {
                 this.days = days;
                 this.currentPoints = currentPoints;
                 this.diamond = diamond;
@@ -146,16 +163,25 @@
                 else {
                     this.pack2 = 0;
                 }
+                if (subscriptionCard) {
+                    this.subscriptionCard = 100;
+                }
+                else {
+                    this.subscriptionCard = 0;
+                }
+                this.water = water;
+                this.instance = instance;
+                this.nightmareDiamond = nightmareDiamond;
             }
             Resources.prototype.calculate = function (levelPoints) {
                 var result = new Result();
+                if (this.currentPoints > 0) {
+                    var currentPoints = new Points("现有积分", 0, this.currentPoints);
+                    currentPoints.explain = "\u73B0\u6709 ".concat(this.currentPoints, " \u79EF\u5206");
+                    result.points.push(currentPoints);
+                }
                 if (this.days > 0) {
                     var zfjDays = Math.min(7, this.days); // 活动天数
-                    if (this.currentPoints > 0) {
-                        var currentPoints = new Points("现有积分", 0, this.currentPoints);
-                        currentPoints.explain = "\u73B0\u6709 ".concat(this.currentPoints, " \u79EF\u5206");
-                        result.points.push(currentPoints);
-                    }
                     var dailyPoints = new Points("每日任务积分", 0);
                     dailyPoints.points = 100 * zfjDays;
                     dailyPoints.explain = "\u6BCF\u65E5\u4EFB\u52A1 100 \u79EF\u5206 * ".concat(zfjDays, " \u5929, \u5171 ").concat(dailyPoints.points, " \u79EF\u5206");
@@ -163,13 +189,13 @@
                     if (this.pack1 > 0) {
                         var pack1Points = ProductPack1.calculatePoints(this.pack1);
                         pack1Points.cost = ProductPack1.purchase.costs[1] * this.pack1;
-                        pack1Points.explain = pack1Points.genExplain();
+                        pack1Points.updateExplain();
                         result.points.push(pack1Points);
                     }
                     if (this.pack2 > 0) {
                         var pack2Points = ProductPack2.calculatePoints(this.pack2);
                         pack2Points.cost = ProductPack2.purchase.costs[1] * this.pack2;
-                        pack2Points.explain = pack2Points.genExplain();
+                        pack2Points.updateExplain();
                         result.points.push(pack2Points);
                     }
                     var freeEnergyQuantity = zfjDays * ProductEnergy.dailyQuantity;
@@ -221,6 +247,18 @@
                         freeRidingPoints.explain = "\u6BCF\u65E5".concat(freeRidingPoints.name, " \u514D\u8D39 ").concat(ProductRiding.dailyQuantity, " * ").concat(this.days, " \u5929").concat(tips, ", \u5171 ").concat(freeRidingQuantity, " \u5F20, ").concat(freeRidingPoints.points, " \u79EF\u5206");
                         result.points.push(freeRidingPoints);
                     }
+                    if (this.water > 0) {
+                        var waterPoints = new Points("旅团浇水", 0);
+                        waterPoints.cost = ProductWater.purchase.costs[this.water] * this.days;
+                        waterPoints.explain = "\u6BCF\u65E5\u65C5\u56E2\u6D47\u6C34 ".concat(this.water, " \u6B21 * ").concat(this.days, " \u5929, \u82B1\u8D39 ").concat(waterPoints.cost, " \u661F\u94BB");
+                        result.points.push(waterPoints);
+                    }
+                    if (this.instance > 0) {
+                        var instancePoints = new Points("秘境/副本体力", 0);
+                        instancePoints.cost = ProductInstance.purchase.costs[this.instance] * this.days;
+                        instancePoints.explain = "\u6BCF\u65E5\u79D8\u5883/\u526F\u672C \u8D2D\u4E70\u4F53\u529B ".concat(this.instance, " \u6B21 * ").concat(this.days, " \u5929, \u82B1\u8D39 ").concat(instancePoints.cost, " \u661F\u94BB");
+                        result.points.push(instancePoints);
+                    }
                     if (this.dailyCost !== 0) {
                         var dailyCostPoints = new Points("每日开销", 0);
                         dailyCostPoints.cost = this.dailyCost * this.days;
@@ -246,15 +284,83 @@
                 if (this.energyCrystal > 0) {
                     result.points.push(ProductEnergyCrystal.calculatePoints(this.energyCrystal));
                 }
-                // 剩余的星钻换算成积分
-                var remainDiamond = Math.floor((this.diamond - result.totalPoints().cost) / 50) * 50;
-                if (remainDiamond > 0) {
-                    var diamondPoints = new Points("\u5269\u4F59\u661F\u94BB", 0, remainDiamond);
-                    diamondPoints.cost = remainDiamond;
-                    diamondPoints.points = remainDiamond / 10;
-                    diamondPoints.explain = "".concat(remainDiamond, " \u661F\u94BB\u7528\u6765\u8D2D\u4E70\u6280\u80FD\u62BD\u6216\u8005\u5BA0\u7269\u62BD, \u5171 ").concat(diamondPoints.points, " \u79EF\u5206");
-                    result.points.push(diamondPoints);
+                // 冒险手册日常任务与周任务资源
+                var weeks = Math.floor(this.days / 7);
+                if (weeks > 0) {
+                    var weekTips = new Points("每周任务提示", 0);
+                    weekTips.explain = "\n每周任务不包含本周收益, 实际收益可能会更多";
+                    result.points.push(weekTips);
+                    if (this.nightmareDiamond > 0) {
+                        var nightmareDiamond = new Points("每周噩梦任务星钻", 0);
+                        nightmareDiamond.cost = -this.nightmareDiamond * weeks;
+                        nightmareDiamond.explain = "\u6BCF\u5468\u5669\u68A6\u4EFB\u52A1 ".concat(this.nightmareDiamond, " \u661F\u94BB * ").concat(weeks, " \u5468, \u5171\u83B7\u5F97 ").concat(-nightmareDiamond.cost, " \u661F\u94BB");
+                        result.points.push(nightmareDiamond);
+                    }
+                    var handbookWeekDiamond = new Points("冒险手册每周任务星钻", 0);
+                    handbookWeekDiamond.cost = -300 * weeks;
+                    handbookWeekDiamond.explain = "\u5192\u9669\u624B\u518C\u6BCF\u5468\u4EFB\u52A1 300 \u661F\u94BB * ".concat(weeks, " \u5468, \u5171\u83B7\u5F97 ").concat(-handbookWeekDiamond.cost, " \u661F\u94BB");
+                    result.points.push(handbookWeekDiamond);
+                    var handbookWeekSkillCard = new Points("冒险手册每周任务技能抽", 3 * weeks);
+                    handbookWeekSkillCard.points = SkillCard.points * handbookWeekSkillCard.quantity;
+                    handbookWeekSkillCard.explain = "\u5192\u9669\u624B\u518C\u6BCF\u5468\u4EFB\u52A1\u6280\u80FD\u62BD 3 \u5F20 * ".concat(weeks, " \u5468, \u5171 ").concat(handbookWeekSkillCard.quantity, " \u5F20, ").concat(handbookWeekSkillCard.points, " \u79EF\u5206");
+                    result.points.push(handbookWeekSkillCard);
+                    var handbookWeekEnergyCrystal = new Points("冒险手册每周任务充能魔晶", 15 * weeks);
+                    handbookWeekEnergyCrystal.points = ProductEnergyCrystal.points * handbookWeekEnergyCrystal.quantity;
+                    handbookWeekEnergyCrystal.explain = "\u5192\u9669\u624B\u518C\u6BCF\u5468\u4EFB\u52A1\u5145\u80FD\u9B54\u6676 15 \u4E2A * ".concat(weeks, " \u5468, \u5171 ").concat(handbookWeekEnergyCrystal.quantity, " \u4E2A, ").concat(handbookWeekEnergyCrystal.points, " \u79EF\u5206");
+                    result.points.push(handbookWeekEnergyCrystal);
+                    var handbookWeekRiding = new Points("冒险手册每周任务骑宠门票", 30 * weeks);
+                    handbookWeekRiding.points = ProductRiding.points * handbookWeekRiding.quantity;
+                    handbookWeekRiding.explain = "\u5192\u9669\u624B\u518C\u6BCF\u5468\u4EFB\u52A1\u9A91\u5BA0\u95E8\u7968 30 \u5F20 * ".concat(weeks, " \u5468, \u5171 ").concat(handbookWeekRiding.quantity, " \u5F20, ").concat(handbookWeekRiding.points, " \u79EF\u5206");
+                    result.points.push(handbookWeekRiding);
                 }
+                if (this.days > 0) {
+                    var handbookDayDiamond = new Points("冒险手册每日任务星钻", 100 * this.days);
+                    handbookDayDiamond.cost = -100 * this.days;
+                    handbookDayDiamond.explain = "\u5192\u9669\u624B\u518C\u6BCF\u65E5\u4EFB\u52A1 100 \u661F\u94BB * ".concat(this.days, " \u5929, \u5171\u83B7\u5F97 ").concat(-handbookDayDiamond.cost, " \u661F\u94BB");
+                    result.points.push(handbookDayDiamond);
+                    var handbookDaySkillCard = new Points("冒险手册每日任务技能抽", 1 * this.days);
+                    handbookDaySkillCard.points = SkillCard.points * handbookDaySkillCard.quantity;
+                    handbookDaySkillCard.explain = "\u5192\u9669\u624B\u518C\u6BCF\u65E5\u4EFB\u52A1\u6280\u80FD\u62BD 1 \u5F20 * ".concat(this.days, " \u5929, \u5171 ").concat(handbookDaySkillCard.quantity, " \u5F20, ").concat(handbookDaySkillCard.points, " \u79EF\u5206");
+                    result.points.push(handbookDaySkillCard);
+                    var handbookDayEnergyCrystal = new Points("冒险手册每日任务充能魔晶", 3 * this.days);
+                    handbookDayEnergyCrystal.points = ProductEnergyCrystal.points * handbookDayEnergyCrystal.quantity;
+                    handbookDayEnergyCrystal.explain = "\u5192\u9669\u624B\u518C\u6BCF\u65E5\u4EFB\u52A1\u5145\u80FD\u9B54\u6676 3 \u4E2A * ".concat(this.days, " \u5929, \u5171 ").concat(handbookDayEnergyCrystal.quantity, " \u4E2A, ").concat(handbookDayEnergyCrystal.points, " \u79EF\u5206");
+                    result.points.push(handbookDayEnergyCrystal);
+                    var handbookDayRiding = new Points("冒险手册每日任务骑宠门票", 5 * this.days);
+                    handbookDayRiding.points = ProductRiding.points * handbookDayRiding.quantity;
+                    handbookDayRiding.explain = "\u5192\u9669\u624B\u518C\u6BCF\u65E5\u4EFB\u52A1\u9A91\u5BA0\u95E8\u7968 5 \u5F20 * ".concat(this.days, " \u5929, \u5171 ").concat(handbookDayRiding.quantity, " \u5F20, ").concat(handbookDayRiding.points, " \u79EF\u5206");
+                    result.points.push(handbookDayRiding);
+                    // 恶龙
+                    var dragonTips = new Points("每日恶龙任务提示", 0);
+                    dragonTips.explain = "\n每日恶龙任务是按最低保底算的，一键添加佣兵后挂机即可获取";
+                    result.points.push(dragonTips);
+                    var dragonDiamond = new Points("每日恶龙任务星钻", 50 * this.days);
+                    dragonDiamond.cost = -50 * this.days;
+                    dragonDiamond.explain = "\u6BCF\u65E5\u6076\u9F99\u4EFB\u52A1 50 \u661F\u94BB * ".concat(this.days, " \u5929, \u5171\u83B7\u5F97 ").concat(-dragonDiamond.cost, " \u661F\u94BB");
+                    result.points.push(dragonDiamond);
+                    var dragonSkillCard = new Points("每日恶龙任务技能抽", 1 * this.days);
+                    dragonSkillCard.points = SkillCard.points * dragonSkillCard.quantity;
+                    dragonSkillCard.explain = "\u6BCF\u65E5\u6076\u9F99\u4EFB\u52A1\u6280\u80FD\u62BD 1 \u5F20 * ".concat(this.days, " \u5929, \u5171 ").concat(dragonSkillCard.quantity, " \u5F20, ").concat(dragonSkillCard.points, " \u79EF\u5206");
+                    result.points.push(dragonSkillCard);
+                    if (this.subscriptionCard !== 0) {
+                        var subscriptionCardPoints = new Points("月卡", 1);
+                        subscriptionCardPoints.cost = -this.subscriptionCard * this.days;
+                        subscriptionCardPoints.explain = "\n\u6708\u5361 \u6BCF\u65E5 ".concat(this.subscriptionCard, " \u661F\u94BB * ").concat(this.days, " \u5929, \u5171\u83B7\u5F97 ").concat(-subscriptionCardPoints.cost, " \u661F\u94BB");
+                        result.points.push(subscriptionCardPoints);
+                    }
+                    var shareDiamond = new Points("邀请福利分享", 0);
+                    shareDiamond.cost = -30 * this.days;
+                    shareDiamond.explain = "\u9080\u8BF7\u798F\u5229\u9875\u9762\u6BCF\u65E5\u5206\u4EAB 30 \u661F\u94BB * ".concat(this.days, " \u5929, \u5171\u83B7\u5F97 ").concat(-shareDiamond.cost, " \u661F\u94BB");
+                    result.points.push(shareDiamond);
+                    var packDiamond = new Points("开服特惠", 0);
+                    packDiamond.cost = -10 * this.days;
+                    packDiamond.explain = "\u5F00\u670D\u7279\u60E0\u9875\u9762\u53F3\u4E0A\u89D2\u6BCF\u65E5 10 \u661F\u94BB * ".concat(this.days, " \u5929, \u5171\u83B7\u5F97 ").concat(-packDiamond.cost, " \u661F\u94BB");
+                    result.points.push(packDiamond);
+                }
+                // 如果积分不够，那么将剩余的星钻换算成积分
+                // 这里只是个占位，因为具体要补多少星钻还需要在 纸飞机积分奖励礼品 的 while 循环中动态计算
+                var diamondPoints = new Points("\u5269\u4F59\u661F\u94BB", 0);
+                result.points.push(diamondPoints);
                 levelPoints.sort(function (a, b) { return a.pointLevel - b.pointLevel; });
                 var finalLevelPoints = [];
                 for (var i = 0; i < 3; i++) {
@@ -268,7 +374,6 @@
                 result.points.push(taskPoints);
                 while (true) {
                     var preIdx = finalLevelPoints.findIndex(function (item) { return item.pointLevel >= points; });
-                    console.log("preIdx", preIdx, points);
                     if (preIdx == -1) {
                         break;
                     }
@@ -276,9 +381,21 @@
                     if (curIdx == -1) {
                         curIdx = finalLevelPoints.length;
                     }
-                    console.log("curIdx", curIdx, result.totalPoints().points);
                     if (curIdx == preIdx) {
-                        break;
+                        var total = result.totalPoints();
+                        points = total.points;
+                        var pointsGap = 9000 - points;
+                        if (pointsGap <= 0) {
+                            break;
+                        }
+                        // 每次添加 50 星钻兑换 5 积分，直至达到 9000 积分或者星钻不够
+                        var remainDiamond = this.diamond - total.cost - total.income;
+                        if (remainDiamond < 50) {
+                            break;
+                        }
+                        diamondPoints.cost += 50;
+                        diamondPoints.points += 5;
+                        continue;
                     }
                     // 计算积分
                     for (var i = preIdx; i < curIdx; i++) {
@@ -287,6 +404,13 @@
                     points = result.totalPoints().points;
                 }
                 taskPoints.explain = "\u7EB8\u98DE\u673A\u79EF\u5206\u5956\u52B1\u793C\u54C1, \u5171 ".concat(taskPoints.points, " \u79EF\u5206");
+                if (diamondPoints.cost > 0) {
+                    diamondPoints.explain = "\u4F7F\u7528 ".concat(diamondPoints.cost, " \u661F\u94BB\u8D2D\u4E70\u8D44\u6E90\uFF0C\u5151\u6362 ").concat(diamondPoints.points, " \u79EF\u5206");
+                }
+                else {
+                    // 从 result.points 中删除 diamondPoints
+                    result.points = result.points.filter(function (item) { return item !== diamondPoints; });
+                }
                 return result;
             };
             return Resources;
@@ -300,14 +424,20 @@
                 this.quantity = quantity;
                 this.points = points;
                 this.cost = cost;
-                this.explain = this.genExplain();
+                this.updateExplain();
             }
-            Points.prototype.genExplain = function () {
-                var s = "".concat(this.name, " * ").concat(this.quantity, " \u5171 ").concat(this.points, " \u79EF\u5206");
+            Points.prototype.updateExplain = function () {
+                var s = "".concat(this.name, " * ").concat(this.quantity, " ");
+                if (this.points !== 0) {
+                    s += " \u5171 ".concat(this.points, " \u79EF\u5206");
+                }
                 if (this.cost > 0) {
                     s += ", \u82B1\u8D39 ".concat(this.cost, " \u661F\u94BB");
                 }
-                return s;
+                else if (this.cost < 0) {
+                    s += ", \u83B7\u5F97 ".concat(-this.cost, " \u661F\u94BB");
+                }
+                this.explain = s;
             };
             return Points;
         }());
@@ -316,20 +446,35 @@
                 this.points = [];
             }
             Result.prototype.totalPoints = function () {
-                var total = new Points("总计");
+                var total = new TotalResult();
                 this.points.forEach(function (p) {
                     total.points += p.points;
-                    total.cost += p.cost;
+                    if (p.cost > 0) {
+                        total.cost += p.cost;
+                    }
+                    else {
+                        total.income += p.cost;
+                    }
                 });
                 return total;
             };
             return Result;
+        }());
+        var TotalResult = /** @class */ (function () {
+            function TotalResult() {
+                this.points = 0;
+                this.cost = 0;
+                this.income = 0;
+            }
+            return TotalResult;
         }());
 
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById("energyPurchaseTimes").innerHTML = ProductEnergy.generateSelectOptions(3);
             document.getElementById("ridingPurchaseTimes").innerHTML = ProductRiding.generateSelectOptions(3);
             document.getElementById("runePurchaseTimes").innerHTML = ProductRune.generateSelectOptions(3);
+            document.getElementById("water").innerHTML = ProductWater.generateSelectOptions(2);
+            document.getElementById("instance").innerHTML = ProductInstance.generateSelectOptions(3);
         });
     </script>
 </head>
@@ -370,22 +515,32 @@
     </fieldset>
 
     <fieldset>
-        <legend>浮动资源</legend>
+        <legend>星钻收入与开销</legend>
         <label for="diamond">现有星钻:</label>
-        <input type="number" id="diamond" name="diamond" value="0" required><br><br>
-        <span>旅团浇水两次 20 + 商店打折零食与突破石 190 - 免费礼包 50 - 开服礼包 10 - 邀请分享 30 = 120</span><br>
-        <span>具体每日星钻开销请根据你的实际情况调整，开销为正数，收入为负数(例如月卡 -100)</span><br>
-        <label for="dailyCost">日常星钻开销:</label>
-        <input type="number" id="dailyCost" name="dailyCost" required value="120"><br><br>
+        <input type="number" id="diamond" name="diamond" value="0" required>
+
+        <input type="checkbox" id="subscriptionCard" name="subscriptionCard" value="0" required> <label for="subscriptionCard">有小月卡</label><br><br>
+
+        <label for="nightmareDiamond">每周噩梦任务星钻奖励:</label>
+        <input type="number" id="nightmareDiamond" name="nightmareDiamond" value="300" required><br>
+        <span>300是比较偏保守的数目，你可以参考你的实际情况填写</span><br><br>
+
+        <label for="water">每日旅团浇水次数</label>
+        <select id="water" name="water" required></select><br><br>
+
+        <label for="instance">每日秘境/副本 购买体力次数</label>
+        <select id="instance" name="instance" required></select><br><br>
+
+        <span>商店打折零食与突破石 190 星钻</span><br>
+        <span>具体每日星钻开销请根据你的实际情况调整</span><br>
+        <label for="dailyCost">商店星钻开销:</label>
+        <input type="number" id="dailyCost" name="dailyCost" required value="190"><br><br>
 
         <span>如果本期的礼包还没购买,请买完后换算成资源再重新计算.</span><br>
         <input type="checkbox" id="pack1" name="pack1" value="1" checked required>
         <label for="pack1">购买自选礼包1(1000星钻,150积分,6.7折)</label><br>
         <input type="checkbox" id="pack2" name="pack2" value="1" checked required>
         <label for="pack2">购买自选礼包2(1800星钻,225积分,8折)</label><br><br>
-
-        <label for="days">多少天后结束:</label>
-        <input type="number" id="days" name="days" value="7" required><br><br>
 
 
     </fieldset>
@@ -414,6 +569,9 @@
         <input type="number" id="pcurrent" name="pcurrent" value="0" required><br>
     </fieldset>
 
+    <br><label for="days">多少天后结束:</label>
+    <input type="number" id="days" name="days" value="7" required>
+
     <button type="button" onclick="calculatePoints()">计算积分</button>
 </form>
 
@@ -441,6 +599,10 @@
         const pack2 = document.getElementById('pack2').checked ? 1 : 0;
         const currentPoints = parseInt(document.getElementById("pcurrent").value);
         const dailyCost = parseInt(document.getElementById("dailyCost").value);
+        const subscriptionCard = document.getElementById('subscriptionCard').checked ? 1 : 0;
+        const water = parseInt(document.getElementById('water').value);
+        const instance = parseInt(document.getElementById('instance').value);
+        const nightmareDiamond = parseInt(document.getElementById('nightmareDiamond').value);
 
         const levelPoints = [
             {pointLevel: 100, points: parseInt(document.getElementById("p100").value)},
@@ -452,18 +614,21 @@
             {pointLevel: 3000, points: parseInt(document.getElementById("p3000").value)},
         ];
 
-        let resource = new Resources(days, currentPoints, diamond, dailyCost, energy, energyPurchaseTimes , energyCrystal, rune, runePurchaseTimes, riding, ridingPurchaseTimes , skill, pet, pack1, pack2);
+        let resource = new Resources(days, currentPoints, diamond, dailyCost, energy, energyPurchaseTimes , energyCrystal, rune, runePurchaseTimes, riding, ridingPurchaseTimes , skill, pet, pack1, pack2, subscriptionCard, water, instance, nightmareDiamond);
 
         const result = resource.calculate(levelPoints);
         document.getElementById('pointsResult').innerText = result.points.map(p => p.explain).join('\n');
         let total = result.totalPoints();
         document.getElementById('all_points').innerText = "总积分：" + total.points;
-        let cost = "总花费：" + total.cost + "星钻";
-        let remainDiamond = diamond - total.cost;
+        let cost = "总花费：" + total.cost + "星钻\n";
+        if (total.income !== 0) {
+            cost += "总收入：" + -total.income + "星钻\n";
+        }
+        let remainDiamond = diamond - total.cost - total.income;
         if (remainDiamond < 0) {
-            cost += "，欠缺" + (-remainDiamond) + "星钻\n";
+            cost += "欠缺" + (-remainDiamond) + "星钻\n";
         } else {
-            cost += "，剩余" + remainDiamond + "星钻\n";
+            cost += "剩余" + remainDiamond + "星钻\n";
         }
         document.getElementById('cost_result').innerText = cost;
     }
