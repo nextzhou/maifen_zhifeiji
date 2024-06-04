@@ -175,6 +175,8 @@
             }
             Resources.prototype.calculate = function (levelPoints) {
                 var result = new Result();
+                var newline = new Points("空行");
+                newline.explain = "";
                 if (this.currentPoints > 0) {
                     var currentPoints = new Points("现有积分", 0, this.currentPoints);
                     currentPoints.explain = "\u73B0\u6709 ".concat(this.currentPoints, " \u79EF\u5206");
@@ -287,8 +289,9 @@
                 // 冒险手册日常任务与周任务资源
                 var weeks = Math.floor(this.days / 7);
                 if (weeks > 0) {
+                    result.points.push(newline);
                     var weekTips = new Points("每周任务提示", 0);
-                    weekTips.explain = "\n每周任务不包含本周收益, 实际收益可能会更多";
+                    weekTips.explain = "每周任务不包含本周收益, 实际收益可能会更多";
                     result.points.push(weekTips);
                     if (this.nightmareDiamond > 0) {
                         var nightmareDiamond = new Points("每周梦魇狂潮任务星钻", 0);
@@ -314,6 +317,7 @@
                     result.points.push(handbookWeekRiding);
                 }
                 if (this.days > 0) {
+                    result.points.push(newline);
                     var handbookDayDiamond = new Points("冒险手册每日任务星钻", 100 * this.days);
                     handbookDayDiamond.cost = -100 * this.days;
                     handbookDayDiamond.explain = "\u5192\u9669\u624B\u518C\u6BCF\u65E5\u4EFB\u52A1 100 \u661F\u94BB * ".concat(this.days, " \u5929, \u5171\u83B7\u5F97 ").concat(-handbookDayDiamond.cost, " \u661F\u94BB");
@@ -331,8 +335,9 @@
                     handbookDayRiding.explain = "\u5192\u9669\u624B\u518C\u6BCF\u65E5\u4EFB\u52A1\u9A91\u5BA0\u95E8\u7968 5 \u5F20 * ".concat(this.days, " \u5929, \u5171 ").concat(handbookDayRiding.quantity, " \u5F20, ").concat(handbookDayRiding.points, " \u79EF\u5206");
                     result.points.push(handbookDayRiding);
                     // 恶龙
+                    result.points.push(newline);
                     var dragonTips = new Points("每日恶龙任务提示", 0);
-                    dragonTips.explain = "\n每日恶龙任务是按最低保底算的，一键添加佣兵后挂机即可获取";
+                    dragonTips.explain = "每日恶龙任务是按最低保底算的，一键添加佣兵后挂机即可获取";
                     result.points.push(dragonTips);
                     var dragonDiamond = new Points("每日恶龙任务星钻", 50 * this.days);
                     dragonDiamond.cost = -50 * this.days;
@@ -342,12 +347,17 @@
                     dragonSkillCard.points = SkillCard.points * dragonSkillCard.quantity;
                     dragonSkillCard.explain = "\u6BCF\u65E5\u6076\u9F99\u4EFB\u52A1\u6280\u80FD\u62BD 1 \u5F20 * ".concat(this.days, " \u5929, \u5171 ").concat(dragonSkillCard.quantity, " \u5F20, ").concat(dragonSkillCard.points, " \u79EF\u5206");
                     result.points.push(dragonSkillCard);
+                    result.points.push(newline);
                     if (this.subscriptionCard !== 0) {
                         var subscriptionCardPoints = new Points("月卡", 1);
                         subscriptionCardPoints.cost = -this.subscriptionCard * this.days;
-                        subscriptionCardPoints.explain = "\n\u6708\u5361 \u6BCF\u65E5 ".concat(this.subscriptionCard, " \u661F\u94BB * ").concat(this.days, " \u5929, \u5171\u83B7\u5F97 ").concat(-subscriptionCardPoints.cost, " \u661F\u94BB");
+                        subscriptionCardPoints.explain = "\u6708\u5361 \u6BCF\u65E5 ".concat(this.subscriptionCard, " \u661F\u94BB * ").concat(this.days, " \u5929, \u5171\u83B7\u5F97 ").concat(-subscriptionCardPoints.cost, " \u661F\u94BB");
                         result.points.push(subscriptionCardPoints);
                     }
+                    var freeDiamond = new Points("礼包页面免费星钻", 0);
+                    freeDiamond.cost = -50 * this.days;
+                    freeDiamond.explain = "\u793C\u5305\u9875\u9762\u6BCF\u65E5\u514D\u8D39 50 \u661F\u94BB * ".concat(this.days, " \u5929, \u5171\u83B7\u5F97 ").concat(-freeDiamond.cost, " \u661F\u94BB");
+                    result.points.push(freeDiamond);
                     var shareDiamond = new Points("邀请福利分享", 0);
                     shareDiamond.cost = -30 * this.days;
                     shareDiamond.explain = "\u9080\u8BF7\u798F\u5229\u9875\u9762\u6BCF\u65E5\u5206\u4EAB 30 \u661F\u94BB * ".concat(this.days, " \u5929, \u5171\u83B7\u5F97 ").concat(-shareDiamond.cost, " \u661F\u94BB");
