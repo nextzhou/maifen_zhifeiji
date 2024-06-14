@@ -23,6 +23,11 @@
         .collapsed {
             display: none;
         }
+        .keypoint {
+            color: black;
+            text-decoration: underline;
+            text-decoration-color: red;
+        }
     </style>
     <script>
         var Product = /** @class */ (function () {
@@ -178,6 +183,15 @@
                 var newline = new Points("空行");
                 newline.explain = "";
                 if (this.currentPoints > 0) {
+                    if (this.days >= 7) {
+                        var error = new Points("错误", 0, 0);
+                        error.explain = "\u4F60\u586B\u5199\u7684\u5929\u6570 ".concat(this.days, " >= 7 \u5929\uFF0C\u8FD9\u610F\u5473\u7740\u7EB8\u98DE\u673A\u6D3B\u52A8\u8FD8\u6CA1\u5F00\u59CB\uFF0C\u56E0\u6B64\u4F60\u7684\u201C\u73B0\u6709\u79EF\u5206\u201D\u5E94\u8BE5\u4E3A0\u624D\u5BF9");
+                        result.points.push(error);
+                        var error2 = new Points("错误", 0, 0);
+                        error2.explain = "请检查你的数据后重新输入并计算。";
+                        result.points.push(error2);
+                        return result;
+                    }
                     var currentPoints = new Points("现有积分", 0, this.currentPoints);
                     currentPoints.explain = "\u73B0\u6709 ".concat(this.currentPoints, " \u79EF\u5206");
                     result.points.push(currentPoints);
@@ -480,9 +494,9 @@
         }());
 
         document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById("energyPurchaseTimes").innerHTML = ProductEnergy.generateSelectOptions(3);
-            document.getElementById("ridingPurchaseTimes").innerHTML = ProductRiding.generateSelectOptions(3);
-            document.getElementById("runePurchaseTimes").innerHTML = ProductRune.generateSelectOptions(3);
+            document.getElementById("energyPurchaseTimes").innerHTML = ProductEnergy.generateSelectOptions(4);
+            document.getElementById("ridingPurchaseTimes").innerHTML = ProductRiding.generateSelectOptions(4);
+            document.getElementById("runePurchaseTimes").innerHTML = ProductRune.generateSelectOptions(4);
             document.getElementById("water").innerHTML = ProductWater.generateSelectOptions(2);
             document.getElementById("instance").innerHTML = ProductInstance.generateSelectOptions(3);
         });
@@ -490,7 +504,7 @@
 </head>
 <body>
 <h1>纸飞机积分计算器</h1>
-
+<b>注意：</b>最终计算出的积分是你<span class="keypoint">至少</span>能拿到的积分。<br>由于主线、成就、限时活动等奖励还有额外的积分，所以<span class="keypoint">实际积分能够更多</span>一些。<br><br>
 <form id="pointsForm">
     <fieldset>
         <legend>固定资源</legend>
@@ -503,7 +517,7 @@
         <label for="energyCrystal">充能魔晶:</label>
         <input type="number" value="0" id="energyCrystal" name="energyCrystal" required><br><br>
 
-        <span>以下购买折扣都是按照原价 1积分/10星钻 换算的, 推荐都购买 3 次, 积分不够可以买 4 次</span><br><br>
+        <span>以下购买折扣都是按照原价 1积分/10星钻 换算的, 推荐都购买 4 次</span><br><br>
 
         <label for="rune">卢恩文字:</label>
         <input type="number" value="0" id="rune" name="rune" required>
@@ -541,7 +555,7 @@
         <label for="instance">每日秘境/副本 购买体力次数</label>
         <select id="instance" name="instance" required></select><br><br>
 
-        <span>商店打折零食与突破石 190 星钻</span><br>
+        <span>商店打折<span class="keypoint">零食</span>与<span class="keypoint">突破石</span> 190 星钻</span><br>
         <span>具体每日星钻开销请根据你的实际情况调整</span><br>
         <label for="dailyCost">商店星钻开销:</label>
         <input type="number" id="dailyCost" name="dailyCost" required value="190"><br><br>
@@ -575,7 +589,7 @@
         <label for="p3000">3000积分对应奖品换算积分</label>
         <input type="number" id="p3000" name="p3000" value="0" required><br><br>
 
-        <label for="pcurrent">现有积分(每完成一轮记得加3000)</label>
+        <label for="pcurrent">现有积分(<span class="keypoint">每完成一轮记得加3000</span>)</label>
         <input type="number" id="pcurrent" name="pcurrent" value="0" required><br>
     </fieldset>
 
@@ -591,8 +605,6 @@
 <span id="cost_result" style="font-weight: bold;"></span><br>
 
 <script>
-
-
     function calculatePoints() {
         const diamond = parseInt(document.getElementById('diamond').value);
         const days = parseInt(document.getElementById('days').value);
@@ -627,20 +639,26 @@
         let resource = new Resources(days, currentPoints, diamond, dailyCost, energy, energyPurchaseTimes , energyCrystal, rune, runePurchaseTimes, riding, ridingPurchaseTimes , skill, pet, pack1, pack2, subscriptionCard, water, instance, nightmareDiamond);
 
         const result = resource.calculate(levelPoints);
-        document.getElementById('pointsResult').innerText = result.points.map(p => p.explain).join('\n');
-        let total = result.totalPoints();
-        document.getElementById('all_points').innerText = "总积分：" + total.points;
-        let cost = "总花费：" + total.cost + "星钻\n";
-        if (total.income !== 0) {
-            cost += "总收入：" + -total.income + "星钻\n";
-        }
-        let remainDiamond = diamond - total.cost - total.income;
-        if (remainDiamond < 0) {
-            cost += "欠缺" + (-remainDiamond) + "星钻\n";
+        if (result.totalPoints().points === 0) {
+            let explain = result.points.map(p => p.explain).join('<br>');
+            document.getElementById('pointsResult').innerHTML = `<p style="color: red">${explain}</p>`;
         } else {
-            cost += "剩余" + remainDiamond + "星钻\n";
+            let explain = result.points.map(p => p.explain).join('\n');
+            document.getElementById('pointsResult').innerText = explain;
+            let total = result.totalPoints();
+            document.getElementById('all_points').innerText = "总积分：" + total.points;
+            let cost = "总花费：" + total.cost + "星钻\n";
+            if (total.income !== 0) {
+                cost += "总收入：" + -total.income + "星钻\n";
+            }
+            let remainDiamond = diamond - total.cost - total.income;
+            if (remainDiamond < 0) {
+                cost += "欠缺" + (-remainDiamond) + "星钻\n";
+            } else {
+                cost += "剩余" + remainDiamond + "星钻\n";
+            }
+            document.getElementById('cost_result').innerText = cost;
         }
-        document.getElementById('cost_result').innerText = cost;
     }
 </script>
 </body>
