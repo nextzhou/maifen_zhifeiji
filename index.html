@@ -30,6 +30,7 @@
         }
     </style>
     <script>
+
         var Product = /** @class */ (function () {
             function Product(name, points, dailyQuantity, purchase) {
                 if (dailyQuantity === void 0) { dailyQuantity = 0; }
@@ -372,14 +373,6 @@
                     freeDiamond.cost = -50 * this.days;
                     freeDiamond.explain = "\u793C\u5305\u9875\u9762\u6BCF\u65E5\u514D\u8D39 50 \u661F\u94BB * ".concat(this.days, " \u5929, \u5171\u83B7\u5F97 ").concat(-freeDiamond.cost, " \u661F\u94BB");
                     result.points.push(freeDiamond);
-                    var shareDiamond = new Points("邀请福利分享", 0);
-                    shareDiamond.cost = -30 * this.days;
-                    shareDiamond.explain = "\u9080\u8BF7\u798F\u5229\u9875\u9762\u6BCF\u65E5\u5206\u4EAB 30 \u661F\u94BB * ".concat(this.days, " \u5929, \u5171\u83B7\u5F97 ").concat(-shareDiamond.cost, " \u661F\u94BB");
-                    result.points.push(shareDiamond);
-                    var packDiamond = new Points("开服特惠", 0);
-                    packDiamond.cost = -10 * this.days;
-                    packDiamond.explain = "\u5F00\u670D\u7279\u60E0\u9875\u9762\u53F3\u4E0A\u89D2\u6BCF\u65E5 10 \u661F\u94BB * ".concat(this.days, " \u5929, \u5171\u83B7\u5F97 ").concat(-packDiamond.cost, " \u661F\u94BB");
-                    result.points.push(packDiamond);
                 }
                 // 如果积分不够，那么将剩余的星钻换算成积分
                 // 这里只是个占位，因为具体要补多少星钻还需要在 纸飞机积分奖励礼品 的 while 循环中动态计算
@@ -492,13 +485,52 @@
             }
             return TotalResult;
         }());
+        var GradePoints = /** @class */ (function () {
+            function GradePoints(name, points) {
+                this.name = name;
+                this.points = points;
+            }
+            return GradePoints;
+        }());
+        var PresetGradePoints = [
+            new GradePoints("第一期,技能自选", [30, 30, 50, 50, 70, 100, 100]),
+            new GradePoints("第二期,补风袋(收获能源概率翻倍)", [30, 30, 0, 60, 0, 90, 0]),
+            new GradePoints("第三期,宠物拼图自选", [20, 30, 0, 50, 0, 100, 0]),
+            new GradePoints("第四期,技能自选", [30, 30, 50, 50, 70, 100, 100]),
+            new GradePoints("?第五期,蒙昧视界(收获卢恩概率翻倍)", [30, 30, 0, 60, 0, 90, 0]),
+            new GradePoints("?第六期,宠物拼图自选", [20, 30, 0, 50, 0, 100, 0]),
+            new GradePoints("?第七期,动感门票", [30, 30, 50, 50, 70, 100, 100]),
+            new GradePoints("?第八期,秘宝自选", [30, 30, 45, 60, 0, 90, 0]),
+            new GradePoints("?第九期,骑宠自选", [10, 10, 14, 14, 14, 20, 20]),
+        ];
+        function generateGradePointsSelectOptions(gps) {
+            var options = '';
+            for (var i = 0; i < gps.length; i++) {
+                var gp = gps[i];
+                options += "<option value=\"".concat(i, "\">").concat(gp.name, "</option>");
+            }
+            return options;
+        }
+        function fillGradePoints() {
+            var gpIdx = document.getElementById("gradePoints").value;
+            var gp = PresetGradePoints[gpIdx];
+            var ids = ["p100", "p300", "p600", "p1000", "p1500", "p2200", "p3000"];
+            for (var i = 0; i < ids.length; i++) {
+                var id = ids[i];
+                document.getElementById(id).value = String(gp.points[i]);
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById("gradePoints").addEventListener("change", fillGradePoints);
+
             document.getElementById("energyPurchaseTimes").innerHTML = ProductEnergy.generateSelectOptions(4);
             document.getElementById("ridingPurchaseTimes").innerHTML = ProductRiding.generateSelectOptions(4);
             document.getElementById("runePurchaseTimes").innerHTML = ProductRune.generateSelectOptions(4);
             document.getElementById("water").innerHTML = ProductWater.generateSelectOptions(2);
             document.getElementById("instance").innerHTML = ProductInstance.generateSelectOptions(3);
+            document.getElementById("gradePoints").innerHTML = generateGradePointsSelectOptions(PresetGradePoints);
+            fillGradePoints();
         });
     </script>
 </head>
@@ -574,20 +606,26 @@
         <span>纸飞机每达到一定积分可领取奖品，如果这些奖品是宠物抽、技能抽等能够换算成积分的物品。</span><br>
         <span>那么你可以将其对应的积分填到下面对应的位置，这样能够更加准确地计算你的积分。</span><br>
         <span>请查看具体的纸飞机活动，并将奖品换算成相应的积分。(一般来说三轮的奖品是一样的)</span><br><br>
-        <label for="p100">100积分对应奖品换算积分</label>
-        <input type="number" id="p100" name="p100" value="0" required><br>
-        <label for="p300">300积分对应奖品换算积分</label>
-        <input type="number" id="p300" name="p300" value="0" required><br>
-        <label for="p600">600积分对应奖品换算积分</label>
-        <input type="number" id="p600" name="p600" value="0" required><br>
-        <label for="p1000">1000积分对应奖品换算积分</label>
-        <input type="number" id="p1000" name="p1000" value="0" required><br>
-        <label for="p1500">1500积分对应奖品换算积分</label>
-        <input type="number" id="p1500" name="p1500" value="0" required><br>
-        <label for="p2200">2200积分对应奖品换算积分</label>
-        <input type="number" id="p2200" name="p2200" value="0" required><br>
-        <label for="p3000">3000积分对应奖品换算积分</label>
-        <input type="number" id="p3000" name="p3000" value="0" required><br><br>
+        <fieldset>
+            <legend>奖品积分</legend>
+            <label for="p100">100积分对应奖品换算积分</label>
+            <input type="number" id="p100" name="p100" value="0" required><br>
+            <label for="p300">300积分对应奖品换算积分</label>
+            <input type="number" id="p300" name="p300" value="0" required><br>
+            <label for="p600">600积分对应奖品换算积分</label>
+            <input type="number" id="p600" name="p600" value="0" required><br>
+            <label for="p1000">1000积分对应奖品换算积分</label>
+            <input type="number" id="p1000" name="p1000" value="0" required><br>
+            <label for="p1500">1500积分对应奖品换算积分</label>
+            <input type="number" id="p1500" name="p1500" value="0" required><br>
+            <label for="p2200">2200积分对应奖品换算积分</label>
+            <input type="number" id="p2200" name="p2200" value="0" required><br>
+            <label for="p3000">3000积分对应奖品换算积分</label>
+            <input type="number" id="p3000" name="p3000" value="0" required><br><br>
+
+            👆一键填入第 <select id="gradePoints" name="gradePoints" required></select>期奖品积分<br>
+            感谢 TapTap用户<a href="https://www.taptap.cn/user/61215902">此奶尚温</a> 所提供的数据。<span class="keypoint"> 问号"?"开头的为预测数据</span><br>
+        </fieldset><br>
 
         <label for="pcurrent">现有积分(<span class="keypoint">每完成一轮记得加3000</span>)</label>
         <input type="number" id="pcurrent" name="pcurrent" value="0" required><br>
