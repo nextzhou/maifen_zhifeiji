@@ -101,10 +101,10 @@
                         discountStr = "".concat(discountStr, "\u500D");
                     }
                     if (i == selected) {
-                        options += "<option value=\"".concat(i, "\" selected>").concat(i, "\u6B21,").concat(thisCostStr, ",").concat(discountStr, "</option>");
+                        options += "<option value=\"".concat(i, "\" selected>\u7B2C").concat(i, "\u6B21,").concat(thisCostStr, ",").concat(discountStr, "</option>");
                     }
                     else {
-                        options += "<option value=\"".concat(i, "\">").concat(i, "\u6B21,").concat(thisCostStr, ",").concat(discountStr, "</option>");
+                        options += "<option value=\"".concat(i, "\">\u7B2C").concat(i, "\u6B21,").concat(thisCostStr, ",").concat(discountStr, "</option>");
                     }
                 }
                 return options;
@@ -135,6 +135,9 @@
         var ProductInstance = new Product("秘境/副本体力", 0, 0, new Purchase(1, [
             0, 20, 40, 60,
         ]));
+        var ProductCat = new Product("猫猫果木", 0, 0, new Purchase(1, [
+            0, 30, 80, 160, 280
+        ]));
         var LevelGiftPoints = /** @class */ (function () {
             function LevelGiftPoints(pointLevel, points) {
                 this.pointLevel = pointLevel;
@@ -143,7 +146,7 @@
             return LevelGiftPoints;
         }());
         var Resources = /** @class */ (function () {
-            function Resources(days, currentPoints, diamond, dailyCost, energy, energyPurchaseTimes, energyCrystal, rune, runePurchaseTimes, riding, ridingPurchaseTimes, skillCard, pedCard, pack1, pack2, subscriptionCard, water, instance, nightmareDiamond) {
+            function Resources(days, currentPoints, diamond, dailyCost, energy, energyPurchaseTimes, energyCrystal, rune, runePurchaseTimes, riding, ridingPurchaseTimes, skillCard, pedCard, pack1, pack2, subscriptionCard, water, cat, instance, nightmareDiamond) {
                 this.days = days;
                 this.currentPoints = currentPoints;
                 this.diamond = diamond;
@@ -176,6 +179,7 @@
                     this.subscriptionCard = 0;
                 }
                 this.water = water;
+                this.cat = cat;
                 this.instance = instance;
                 this.nightmareDiamond = nightmareDiamond;
             }
@@ -276,6 +280,12 @@
                         instancePoints.explain = "\u6BCF\u65E5\u79D8\u5883/\u526F\u672C \u8D2D\u4E70\u4F53\u529B ".concat(this.instance, " \u6B21 * ").concat(this.days, " \u5929, \u82B1\u8D39 ").concat(instancePoints.cost, " \u661F\u94BB");
                         result.points.push(instancePoints);
                     }
+                    if (this.cat > 0) {
+                        var catPoints = new Points("猫猫果木", 0);
+                        catPoints.cost = ProductCat.purchase.costs[this.cat] * this.days;
+                        catPoints.explain = "\u6BCF\u65E5\u732B\u732B\u679C\u6728 ".concat(this.cat, " \u6B21 * ").concat(this.days, " \u5929, \u82B1\u8D39 ").concat(catPoints.cost, " \u661F\u94BB");
+                        result.points.push(catPoints);
+                    }
                     if (this.dailyCost !== 0) {
                         var dailyCostPoints = new Points("每日开销", 0);
                         dailyCostPoints.cost = this.dailyCost * this.days;
@@ -314,6 +324,18 @@
                         nightmareDiamond.explain = "\u6BCF\u5468\u68A6\u9B47\u72C2\u6F6E\u4EFB\u52A1 ".concat(this.nightmareDiamond, " \u661F\u94BB * ").concat(weeks, " \u5468, \u5171\u83B7\u5F97 ").concat(-nightmareDiamond.cost, " \u661F\u94BB");
                         result.points.push(nightmareDiamond);
                     }
+                    var guildPet = new Points("每周工会服务区宠物抽", 0);
+                    guildPet.points = PedCard.points * 2 * weeks;
+                    guildPet.explain = "\u6BCF\u5468\u5DE5\u4F1A\u670D\u52A1\u533A\u5BA0\u7269\u62BD\u81F3\u5C11 2 \u5F20 * ".concat(weeks, " \u5468, \u5171 ").concat(guildPet.points, " \u79EF\u5206");
+                    result.points.push(guildPet);
+                    var instanceStoreSkillCard = new Points("每周秘境商店技能抽", 0);
+                    instanceStoreSkillCard.points = SkillCard.points * 3 * weeks;
+                    instanceStoreSkillCard.explain = "\u6BCF\u5468\u79D8\u5883\u5546\u5E97\u6280\u80FD\u62BD 3 \u5F20 * ".concat(weeks, " \u5468, \u5171 ").concat(instanceStoreSkillCard.points, " \u79EF\u5206");
+                    result.points.push(instanceStoreSkillCard);
+                    var instanceStoreDiamond = new Points("每周秘境商店星钻", 0);
+                    instanceStoreDiamond.cost = -1000 * weeks;
+                    instanceStoreDiamond.explain = "\u6BCF\u5468\u79D8\u5883\u5546\u5E97 1000 \u661F\u94BB * ".concat(weeks, " \u5468, \u5171\u83B7\u5F97 ").concat(-instanceStoreDiamond.cost, " \u661F\u94BB");
+                    result.points.push(instanceStoreDiamond);
                     var handbookWeekDiamond = new Points("冒险手册每周任务星钻", 0);
                     handbookWeekDiamond.cost = -300 * weeks;
                     handbookWeekDiamond.explain = "\u5192\u9669\u624B\u518C\u6BCF\u5468\u4EFB\u52A1 300 \u661F\u94BB * ".concat(weeks, " \u5468, \u5171\u83B7\u5F97 ").concat(-handbookWeekDiamond.cost, " \u661F\u94BB");
@@ -497,7 +519,7 @@
             new GradePoints("第二期,补风袋(收获能源概率翻倍)", [30, 30, 0, 60, 0, 90, 0]),
             new GradePoints("第三期,宠物拼图自选", [20, 30, 0, 50, 0, 100, 0]),
             new GradePoints("第四期,技能自选", [30, 30, 50, 50, 70, 100, 100]),
-            new GradePoints("?第五期,蒙昧视界(收获卢恩概率翻倍)", [30, 30, 0, 60, 0, 90, 0]),
+            new GradePoints("第五期,蒙昧视界(收获卢恩概率翻倍)", [30, 30, 0, 60, 0, 90, 0]),
             new GradePoints("?第六期,宠物拼图自选", [20, 30, 0, 50, 0, 100, 0]),
             new GradePoints("?第七期,动感门票", [30, 30, 50, 50, 70, 100, 100]),
             new GradePoints("?第八期,秘宝自选", [30, 30, 45, 60, 0, 90, 0]),
@@ -528,6 +550,7 @@
             document.getElementById("ridingPurchaseTimes").innerHTML = ProductRiding.generateSelectOptions(4);
             document.getElementById("runePurchaseTimes").innerHTML = ProductRune.generateSelectOptions(4);
             document.getElementById("water").innerHTML = ProductWater.generateSelectOptions(2);
+            document.getElementById("cat").innerHTML = ProductCat.generateSelectOptions(0);
             document.getElementById("instance").innerHTML = ProductInstance.generateSelectOptions(3);
             document.getElementById("gradePoints").innerHTML = generateGradePointsSelectOptions(PresetGradePoints);
             fillGradePoints();
@@ -581,13 +604,16 @@
         <input type="number" id="nightmareDiamond" name="nightmareDiamond" value="300" required><br>
         <span>300是比较偏保守的数目，你可以参考你的实际情况填写</span><br><br>
 
-        <label for="water">每日旅团浇水次数</label>
+        <label for="water">每日旅团浇水次数(无积分)</label>
         <select id="water" name="water" required></select><br><br>
 
-        <label for="instance">每日秘境/副本 购买体力次数</label>
+        <label for="instance">每日秘境/副本 购买体力次数(无积分)</label>
         <select id="instance" name="instance" required></select><br><br>
 
-        <span>商店打折<span class="keypoint">零食</span>与<span class="keypoint">突破石</span> 190 星钻</span><br>
+        <label for="cat">猫猫果木购买次数(二转后开启,无积分)</label>
+        <select id="cat" name="cat" required></select><br><br>
+
+        <span>商店打折零食与突破石 190 星钻</span><br>
         <span>具体每日星钻开销请根据你的实际情况调整</span><br>
         <label for="dailyCost">商店星钻开销:</label>
         <input type="number" id="dailyCost" name="dailyCost" required value="190"><br><br>
@@ -662,6 +688,7 @@
         const dailyCost = parseInt(document.getElementById("dailyCost").value);
         const subscriptionCard = document.getElementById('subscriptionCard').checked ? 1 : 0;
         const water = parseInt(document.getElementById('water').value);
+        const cat = parseInt(document.getElementById('cat').value);
         const instance = parseInt(document.getElementById('instance').value);
         const nightmareDiamond = parseInt(document.getElementById('nightmareDiamond').value);
 
@@ -675,7 +702,7 @@
             {pointLevel: 3000, points: parseInt(document.getElementById("p3000").value)},
         ];
 
-        let resource = new Resources(days, currentPoints, diamond, dailyCost, energy, energyPurchaseTimes , energyCrystal, rune, runePurchaseTimes, riding, ridingPurchaseTimes , skill, pet, pack1, pack2, subscriptionCard, water, instance, nightmareDiamond);
+        let resource = new Resources(days, currentPoints, diamond, dailyCost, energy, energyPurchaseTimes , energyCrystal, rune, runePurchaseTimes, riding, ridingPurchaseTimes , skill, pet, pack1, pack2, subscriptionCard, water, cat, instance, nightmareDiamond);
 
         const result = resource.calculate(levelPoints);
         if (result.totalPoints().points === 0) {
