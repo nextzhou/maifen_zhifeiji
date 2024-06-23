@@ -28,35 +28,45 @@
             text-decoration: underline;
             text-decoration-color: red;
         }
-        /* Tooltip 容器 */
         .tooltip {
             position: relative;
             display: inline-block;
-            border-bottom: 1px dotted orangered; /* 悬停元素上显示点线 */
+            border-bottom: 1px dotted black;
         }
 
-        /* Tooltip 文本 */
         .tooltip .tooltiptext {
             visibility: hidden;
-            width: 120px;
+            width: 160px;
             background-color: black;
             color: #fff;
             text-align: center;
-            padding: 5px 0;
             border-radius: 6px;
-
-            /* 定位 */
+            padding: 5px 0;
             position: absolute;
             z-index: 1;
+            bottom: 150%;
+            left: 50%;
+            margin-left: -60px;
         }
 
-        /* 鼠标移动上去后显示提示框 */
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: black transparent transparent transparent;
+        }
+
         .tooltip:hover .tooltiptext {
             visibility: visible;
         }
     </style>
+    <link rel="stylesheet" href="https://bulma.io/vendor/fontawesome-free-6.5.2-web/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css">
     <script>
-
         var Product = /** @class */ (function () {
             function Product(name, points, dailyQuantity, purchase) {
                 if (dailyQuantity === void 0) { dailyQuantity = 0; }
@@ -568,7 +578,56 @@
                 document.getElementById(id).value = String(gp.points[i]);
             }
         }
-
+        function toggleCard(id) {
+            var card = document.getElementById(id);
+            card.getElementsByClassName("card-content")[0].classList.toggle("collapsed");
+            var icon = card.getElementsByClassName("fas")[0];
+            icon.classList.toggle("fa-angle-up");
+            icon.classList.toggle("fa-angle-down");
+        }
+        function expendCard(id) {
+            var card = document.getElementById(id);
+            card.getElementsByClassName("card-content")[0].classList.remove("collapsed");
+            var icon = card.getElementsByClassName("fas")[0];
+            icon.classList.remove("fa-angle-down");
+            icon.classList.add("fa-angle-up");
+        }
+        function points_animation(id, points) {
+            var el = document.getElementById(id);
+            var max = 9000;
+            el.setAttribute("max", max.toString());
+            el.classList.remove("is-success", "is-info", "is-warning", "is-danger");
+            if (points >= 9000) {
+                el.classList.add("is-success");
+            }
+            else if (points >= 8200) {
+                el.classList.add("is-info");
+            }
+            else if (points >= 6000) {
+                el.classList.add("is-warning");
+            }
+            else {
+                el.classList.add("is-danger");
+            }
+            var step = Math.floor(points / 50);
+            if (step == 0) {
+                el.innerText = "".concat(points.toString(), " / ").concat(max.toString());
+                el.setAttribute("value", points.toString());
+                return;
+            }
+            var currentPoints = 0;
+            var interval = setInterval(function () {
+                currentPoints += step;
+                if (currentPoints >= points) {
+                    currentPoints = points;
+                    clearInterval(interval);
+                }
+                el.innerText = "".concat(currentPoints.toString(), " / ").concat(max.toString());
+                el.setAttribute("value", currentPoints.toString());
+            }, 10);
+        }
+    </script>
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById("gradePoints").addEventListener("change", fillGradePoints);
 
@@ -582,177 +641,455 @@
             fillGradePoints();
         });
     </script>
+    <script>
+        function calculatePoints() {
+            expendCard("points_result");
+
+            const diamond = parseInt(document.getElementById('diamond').value);
+            const days = parseInt(document.getElementById('days').value);
+            const pet = parseInt(document.getElementById('pet').value);
+            const skill = parseInt(document.getElementById('skill').value);
+            const rune = parseInt(document.getElementById('rune').value);
+            const runePurchaseTimes = parseInt(document.getElementById('runePurchaseTimes').value);
+            const energyCrystal = parseInt(document.getElementById('energyCrystal').value);
+            const energy = parseInt(document.getElementById('energy').value);
+            const energyPurchaseTimes = parseInt(document.getElementById('energyPurchaseTimes').value);
+            const riding = parseInt(document.getElementById('riding').value);
+            const ridingPurchaseTimes = parseInt(document.getElementById('ridingPurchaseTimes').value);
+            const pack1 = document.getElementById('pack1').checked ? 1 : 0;
+            const pack2 = document.getElementById('pack2').checked ? 1 : 0;
+            const currentPoints = parseInt(document.getElementById("pcurrent").value);
+            const dailyCost = parseInt(document.getElementById("dailyCost").value);
+            const subscriptionCard = document.getElementById('subscriptionCard').checked ? 1 : 0;
+            const water = parseInt(document.getElementById('water').value);
+            const cat = parseInt(document.getElementById('cat').value);
+            const instance = parseInt(document.getElementById('instance').value);
+            const nightmareDiamond = parseInt(document.getElementById('nightmareDiamond').value);
+
+            const levelPoints = [
+                {pointLevel: 100, points: parseInt(document.getElementById("p100").value)},
+                {pointLevel: 300, points: parseInt(document.getElementById("p300").value)},
+                {pointLevel: 600, points: parseInt(document.getElementById("p600").value)},
+                {pointLevel: 1000, points: parseInt(document.getElementById("p1000").value)},
+                {pointLevel: 1500, points: parseInt(document.getElementById("p1500").value)},
+                {pointLevel: 2200, points: parseInt(document.getElementById("p2200").value)},
+                {pointLevel: 3000, points: parseInt(document.getElementById("p3000").value)},
+            ];
+
+            let resource = new Resources(days, currentPoints, diamond, dailyCost, energy, energyPurchaseTimes , energyCrystal, rune, runePurchaseTimes, riding, ridingPurchaseTimes , skill, pet, pack1, pack2, subscriptionCard, water, cat, instance, nightmareDiamond);
+
+            const result = resource.calculate(levelPoints);
+            if (result.totalPoints().points === 0) {
+                let explain = result.points.map(p => p.explain).join('<br>');
+                document.getElementById('pointsResult').innerHTML = `<p style="color: red">${explain}</p>`;
+            } else {
+                points_animation('points_process', result.totalPoints().points);
+                let explain = result.points.map(p => p.explain).join('\n');
+                document.getElementById('pointsResult').innerText = explain;
+                let total = result.totalPoints();
+                document.getElementById('all_points').innerText = "总积分：" + total.points;
+                let cost = "总花费：" + total.cost + "星钻\n";
+                if (total.income !== 0) {
+                    cost += "总收入：" + -total.income + "星钻\n";
+                }
+                let remainDiamond = diamond - total.cost - total.income;
+                if (remainDiamond < 0) {
+                    cost += "欠缺" + (-remainDiamond) + "星钻\n";
+                } else {
+                    cost += "剩余" + remainDiamond + "星钻\n";
+                }
+                document.getElementById('cost_result').innerText = cost;
+            }
+        }
+    </script>
 </head>
 <body>
-<h1>纸飞机积分计算器</h1>
-<b>注意：</b>最终计算出的积分是你<span class="keypoint">至少</span>能拿到的积分。<br>由于主线、成就、限时活动等奖励还有额外的积分，所以<span class="keypoint">实际积分能够更多</span>一些。<br><br>
-<form id="pointsForm">
-    <fieldset>
-        <legend>固定资源</legend>
-        <label for="pet">宠物抽:</label>
-        <input type="number" value="0" id="pet" name="pet" required><br><br>
+<div class="container">
+    <section class="hero is-link">
+        <div class="hero-body">
+            <h1 class="title">纸飞机积分计算器</h1>
+            <p class="subtitle" style="text-indent: 125px">for 出发吧麦芬</p>
+        </div>
+    </section>
 
-        <label for="skill">技能抽:</label>
-        <input type="number" value="0" id="skill" name="skill" required><br><br>
+    <div class="block"></div>
 
-        <label for="energyCrystal">充能魔晶:</label>
-        <input type="number" value="0" id="energyCrystal" name="energyCrystal" required><br><br>
+    <article class="message is-info">
+        <div class="message-header">
+            <p>
+            <span class="icon">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </span>
+                <span>注意事项</span>
+            </p>
+        </div>
+        <div class="message-body">
+            最终计算出的积分是你<strong class="keypoint">至少</strong>能拿到的积分。<br>由于主线、成就、限时活动等奖励还有额外的积分，所以<strong class="keypoint">实际积分能够更多</strong>一些。
+        </div>
+    </article>
 
-        <span>以下购买折扣都是按照原价 1积分/10星钻 换算的, 推荐都购买 4 次</span><br><br>
+<div class="card" id="fixed_resources">
+    <header class="card-header">
+        <p class="card-header-title">固定资源</p>
+        <button class="card-header-icon" aria-label="more options" onclick="toggleCard('fixed_resources')">
+          <span class="icon">
+            <i class="fas fa-angle-up" aria-hidden="true"></i>
+          </span>
+        </button>
+    </header>
 
-        <label for="rune">卢恩文字:</label>
-        <input type="number" value="0" id="rune" name="rune" required>
-        <label for="runePurchaseTimes">每日购买次数:</label>
-        <select id="runePurchaseTimes" name="runePurchaseTimes" required>
-        </select><br><br>
+    <div class="card-content">
+        <div class="content">
+            <nav class="level">
+                <div class="level-left">
+                    <label class="level-item" style="width:5em" for="pet">宠物抽:</label>
+                    <div class="level-item">
+                        <input type="number" class="input" style="width: 10em" value="0" id="pet" name="pet" required>
+                    </div>
+                </div>
+            </nav>
 
-        <label for="energy" class="tooltip">秘宝能源:<span class="tooltiptext">邮箱、成就等未领取的能源</span> </label>
-        <input type="number" value="0" id="energy" name="energy" required>
-        <label for="energyPurchaseTimes">每日购买次数:</label>
-        <select id="energyPurchaseTimes" name="energyPurchaseTimes" required></select>
-        <br><br>
-
-        <label for="riding">骑宠门票:</label>
-        <input type="number" value="0" id="riding" name="riding" required>
-        <label for="ridingPurchaseTimes">每日购买次数:</label>
-        <select id="ridingPurchaseTimes" name="ridingPurchaseTimes" required>
-        </select><br><br>
-    </fieldset>
-
-    <fieldset>
-        <legend>星钻收入与开销</legend>
-        <label for="diamond">现有星钻:</label>
-        <input type="number" id="diamond" name="diamond" value="0" required>
-
-        <input type="checkbox" id="subscriptionCard" name="subscriptionCard" value="0" required> <label for="subscriptionCard">有小月卡</label><br><br>
-
-        <label for="nightmareDiamond">每周梦魇狂潮任务星钻奖励:</label>
-        <input type="number" id="nightmareDiamond" name="nightmareDiamond" value="300" required><br>
-        <span>300是比较偏保守的数目，你可以参考你的实际情况填写</span><br><br>
-
-        <label for="water">每日旅团浇水次数(无积分)</label>
-        <select id="water" name="water" required></select><br><br>
-
-        <label for="instance">每日秘境/副本 购买体力次数(无积分)</label>
-        <select id="instance" name="instance" required></select><br><br>
-
-        <label for="cat">猫猫果木购买次数(二转后开启,无积分)</label>
-        <select id="cat" name="cat" required></select><br><br>
-
-        <span>商店打折零食与突破石 190 星钻</span><br>
-        <span>具体每日星钻开销请根据你的实际情况调整</span><br>
-        <label for="dailyCost">商店星钻开销:</label>
-        <input type="number" id="dailyCost" name="dailyCost" required value="190"><br><br>
-
-        <span>如果本期的礼包还没购买,<span class="keypoint">请买完后换算成资源</span>再重新计算.</span><br>
-        <input type="checkbox" id="pack1" name="pack1" value="1" checked required>
-        <label for="pack1">购买自选礼包1(1000星钻,150积分,6.7折)</label><br>
-        <input type="checkbox" id="pack2" name="pack2" value="1" checked required>
-        <label for="pack2">购买自选礼包2(1800星钻,225积分,8折)</label><br><br>
+            <div class="level">
+                <div class="level-left">
+                    <label class="level-item" style="width:5em" for="skill">技能抽:</label>
+                    <div class="level-item">
+                        <input type="number" class="input" style="width: 10em" value="0" id="skill" name="skill" required><br><br>
+                    </div>
+                </div>
+            </div>
 
 
-    </fieldset>
+                <nav class="level">
+                    <div class="level-left">
+                        <label class="level-item" style="width:5em" for="energyCrystal">充能魔晶:</label>
+                        <div class="level-item">
+                            <input class="input" style="width: 10em" type="number" value="0" id="energyCrystal" name="energyCrystal" required><br><br>
+                        </div>
+                    </div>
+                </nav>
 
-    <fieldset>
-        <legend>纸飞机积分奖励</legend>
-        <span>纸飞机每达到一定积分可领取奖品，如果这些奖品是宠物抽、技能抽等能够换算成积分的物品。</span><br>
-        <span>那么你可以将其对应的积分填到下面对应的位置，这样能够更加准确地计算你的积分。</span><br>
-        <span>请查看具体的纸飞机活动，并将奖品换算成相应的积分。(一般来说三轮的奖品是一样的)</span><br><br>
-        <fieldset>
-            <legend>奖品积分</legend>
-            <label for="p100">100积分对应奖品换算积分</label>
-            <input type="number" id="p100" name="p100" value="0" required><br>
-            <label for="p300">300积分对应奖品换算积分</label>
-            <input type="number" id="p300" name="p300" value="0" required><br>
-            <label for="p600">600积分对应奖品换算积分</label>
-            <input type="number" id="p600" name="p600" value="0" required><br>
-            <label for="p1000">1000积分对应奖品换算积分</label>
-            <input type="number" id="p1000" name="p1000" value="0" required><br>
-            <label for="p1500">1500积分对应奖品换算积分</label>
-            <input type="number" id="p1500" name="p1500" value="0" required><br>
-            <label for="p2200">2200积分对应奖品换算积分</label>
-            <input type="number" id="p2200" name="p2200" value="0" required><br>
-            <label for="p3000">3000积分对应奖品换算积分</label>
-            <input type="number" id="p3000" name="p3000" value="0" required><br><br>
+            <hr>
 
-            👆一键填入第 <select id="gradePoints" name="gradePoints" required></select>期奖品积分<br>
-            感谢 TapTap用户<a href="https://www.taptap.cn/user/61215902">此奶尚温</a> 所提供的数据。<span class="keypoint"> 问号"?"开头的为预测数据</span><br>
-        </fieldset><br>
+            <div class="block">以下购买折扣都是按照原价 1积分/10星钻 换算的, 推荐都购买 4 次</div>
 
-        <label for="pcurrent">现有积分(<span class="keypoint">每完成一轮记得加3000</span>)</label>
-        <input type="number" id="pcurrent" name="pcurrent" value="0" required><br>
-    </fieldset>
+            <nav class="level">
+                <div class="level-left">
+                    <label class="level-item" style="width:5em" for="rune">卢恩文字:</label>
+                    <div class="control level-item">
+                        <input class="input" style="width: 10em" type="number" value="0" id="rune" name="rune" required>
+                    </div>
+                    <label class="level-item" for="runePurchaseTimes">每日购买次数:</label>
+                    <div class="control level-item">
+                        <div class="select">
+                            <select id="runePurchaseTimes" name="runePurchaseTimes" required> </select>
+                        </div>
+                    </div>
+                </div>
+            </nav>
 
-    <br><label for="days">多少天后结束:</label>
-    <input type="number" id="days" name="days" value="7" required>
+            <nav class="level">
+                <div class="level-left">
+                    <label class="level-item" style="width:5em">
+                        <div class="tooltip">秘宝能源:
+                            <span class="tooltiptext">邮箱、成就等未领取的能源</span>
+                        </div>
+                    </label>
+                    <div class="control level-item">
+                        <input class="input" style="width: 10em" type="number" value="0" id="energy" name="energy" required>
+                    </div>
+                    <label class="level-item" for="energyPurchaseTimes">每日购买次数:</label>
+                    <div class="control level-item">
+                        <div class="select">
+                        <select class="" id="energyPurchaseTimes" name="energyPurchaseTimes" required> </select>
+                        </div>
+                    </div>
+                </div>
+            </nav>
 
-    <button type="button" onclick="calculatePoints()">计算积分</button>
-</form>
+            <nav class="level">
+                <div class="level-left">
+                    <label class="level-item" style="width:5em" for="riding">骑宠门票:</label>
+                    <div class="control level-item">
+                        <input class="input" style="width: 10em" type="number" value="0" id="riding" name="riding" required>
+                    </div>
+                    <label class="level-item" for="ridingPurchaseTimes">每日购买次数:</label>
+                    <div class="control level-item">
+                        <div class="select">
+                        <select class="" id="ridingPurchaseTimes" name="ridingPurchaseTimes" required> </select>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </div>
+</div>
 
-<h2>积分结果: <br></h2>
-<span id="pointsResult"></span><br><br>
-<span id="all_points" style="font-weight: bold;"></span><br>
-<span id="cost_result" style="font-weight: bold;"></span><br>
-<span id="invite"></span><br>
+<div class="card" id="cost_card">
+    <header class="card-header">
+        <p class="card-header-title">星钻收入与开销</p>
+        <button class="card-header-icon" aria-label="more options" onclick="toggleCard('cost_card')">
+          <span class="icon">
+            <i class="fas fa-angle-up" aria-hidden="true"></i>
+          </span>
+        </button>
+    </header>
 
-<script>
-    function calculatePoints() {
-        const diamond = parseInt(document.getElementById('diamond').value);
-        const days = parseInt(document.getElementById('days').value);
-        const pet = parseInt(document.getElementById('pet').value);
-        const skill = parseInt(document.getElementById('skill').value);
-        const rune = parseInt(document.getElementById('rune').value);
-        const runePurchaseTimes = parseInt(document.getElementById('runePurchaseTimes').value);
-        const energyCrystal = parseInt(document.getElementById('energyCrystal').value);
-        const energy = parseInt(document.getElementById('energy').value);
-        const energyPurchaseTimes = parseInt(document.getElementById('energyPurchaseTimes').value);
-        const riding = parseInt(document.getElementById('riding').value);
-        const ridingPurchaseTimes = parseInt(document.getElementById('ridingPurchaseTimes').value);
-        const pack1 = document.getElementById('pack1').checked ? 1 : 0;
-        const pack2 = document.getElementById('pack2').checked ? 1 : 0;
-        const currentPoints = parseInt(document.getElementById("pcurrent").value);
-        const dailyCost = parseInt(document.getElementById("dailyCost").value);
-        const subscriptionCard = document.getElementById('subscriptionCard').checked ? 1 : 0;
-        const water = parseInt(document.getElementById('water').value);
-        const cat = parseInt(document.getElementById('cat').value);
-        const instance = parseInt(document.getElementById('instance').value);
-        const nightmareDiamond = parseInt(document.getElementById('nightmareDiamond').value);
+    <div class="card-content">
+        <div class="content">
+            <nav class="level">
+                <div class="level-left">
+                    <label class="level-item" for="diamond">现有星钻:</label>
+                    <div class="control level-item">
+                        <input class="input" style="width: 10em" type="number" id="diamond" name="diamond" value="0" required>
+                    </div>
+                    <div class="control level-item">
+                        <input type="checkbox" id="subscriptionCard" name="subscriptionCard" value="0" required>
+                    </div>
+                    <label for="subscriptionCard">有小月卡</label>
+                </div>
+            </nav>
 
-        const levelPoints = [
-            {pointLevel: 100, points: parseInt(document.getElementById("p100").value)},
-            {pointLevel: 300, points: parseInt(document.getElementById("p300").value)},
-            {pointLevel: 600, points: parseInt(document.getElementById("p600").value)},
-            {pointLevel: 1000, points: parseInt(document.getElementById("p1000").value)},
-            {pointLevel: 1500, points: parseInt(document.getElementById("p1500").value)},
-            {pointLevel: 2200, points: parseInt(document.getElementById("p2200").value)},
-            {pointLevel: 3000, points: parseInt(document.getElementById("p3000").value)},
-        ];
+            <nav class="level">
+                <div class="level-left">
+                    <label class="level-item">
+                        <div class="tooltip">
+                            每周梦魇狂潮任务星钻奖励:
+                            <span class="tooltiptext">300是比较偏保守的数目，你可以参考你的实际情况填写</span>
+                        </div>
+                    </label>
+                    <div class="control level-item">
+                        <input class="input" style="width: 10em" type="number" id="nightmareDiamond" name="nightmareDiamond" value="300" required><br>
+                    </div>
+                </div>
+            </nav>
 
-        let resource = new Resources(days, currentPoints, diamond, dailyCost, energy, energyPurchaseTimes , energyCrystal, rune, runePurchaseTimes, riding, ridingPurchaseTimes , skill, pet, pack1, pack2, subscriptionCard, water, cat, instance, nightmareDiamond);
+            <nav class="level">
+                <div class="level-left">
+                    <label class="level-item" for="water">每日旅团浇水次数(无积分):</label>
+                    <div class="control level-item select">
+                        <select id="water" name="water" required></select><br><br>
+                    </div>
+                </div>
+            </nav>
 
-        const result = resource.calculate(levelPoints);
-        if (result.totalPoints().points === 0) {
-            let explain = result.points.map(p => p.explain).join('<br>');
-            document.getElementById('pointsResult').innerHTML = `<p style="color: red">${explain}</p>`;
-        } else {
-            let explain = result.points.map(p => p.explain).join('\n');
-            document.getElementById('pointsResult').innerText = explain;
-            let total = result.totalPoints();
-            document.getElementById('all_points').innerText = "总积分：" + total.points;
-            let cost = "总花费：" + total.cost + "星钻\n";
-            if (total.income !== 0) {
-                cost += "总收入：" + -total.income + "星钻\n";
-            }
-            let remainDiamond = diamond - total.cost - total.income;
-            if (remainDiamond < 0) {
-                cost += "欠缺" + (-remainDiamond) + "星钻\n";
-            } else {
-                cost += "剩余" + remainDiamond + "星钻\n";
-            }
-            document.getElementById('cost_result').innerText = cost;
-            document.getElementById('invite').innerHTML = '如果该工具有帮助到你，可以考虑填一下我的邀请码 <span class="keypoint">0O9MJ9O</span> ，感谢~';
-        }
-    }
-</script>
+            <nav class="level">
+                <div class="level-left">
+                    <label class="level-item" for="instance">每日秘境/副本 购买体力次数(无积分):</label>
+                    <div class="control level-item select">
+                        <select id="instance" name="instance" required></select>
+                    </div>
+                </div>
+            </nav>
+
+            <nav class="level">
+                <div class="level-left">
+                    <label class="level-item" for="cat">猫猫果木购买次数(二转后开启,无积分):</label>
+                    <div class="control level-item select">
+                        <select id="cat" name="cat" required></select>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="content">
+                <p>
+                    <span>商店打折零食与突破石 190 星钻 </span><br>
+                    <span>具体每日星钻开销请根据你的实际情况调整</span>
+                </p>
+                <nav class="level">
+                    <div class="level-left">
+                        <label class="level-item" for="dailyCost">商店星钻开销:</label>
+                        <div class="control level-item">
+                            <input class="input" style="width: 10em" type="number" id="dailyCost" name="dailyCost" required value="190"><br><br>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+
+            <div class="content">
+                <label class="checkbox" for="pack1">
+                    <input type="checkbox" id="pack1" name="pack1" value="1" checked required>
+                    购买自选礼包1(1000星钻,150积分,6.7折)
+                </label>
+                <br>
+                <label class="checkbox" for="pack2">
+                    <input type="checkbox" id="pack2" name="pack2" value="1" checked required>
+                    购买自选礼包2(1800星钻,225积分,8折)
+                </label>
+                <p>如果本期的礼包还没购买,<span class="keypoint">请买完后换算成资源</span>再重新计算.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card" id="grade_points_card">
+    <header class="card-header">
+        <p class="card-header-title">纸飞机积分奖励</p>
+        <button class="card-header-icon" aria-label="more options" onclick="toggleCard('grade_points_card')">
+          <span class="icon">
+            <i class="fas fa-angle-up" aria-hidden="true"></i>
+          </span>
+        </button>
+    </header>
+    <div class="card-content">
+        <div class="content">
+            <p>
+                <span>纸飞机每达到一定积分可领取奖品，这些奖品本身也能产生积分。</span><br>
+                <span>你可以使用下方的一键填入功能，或者
+                    <span class="tooltip">
+                        自行换算奖品积分，
+                        <span class="tooltiptext">
+                            积分换算规则:<br>
+                            技能抽 × 10<br>
+                            宠物抽 × 15<br>
+                            卢恩文字 × 0.1<br>
+                            秘宝能源 × 0.3<br>
+                            骑宠门票 × 2<br>
+                        </span>
+                    </span>
+                    将结果填入下方表格。</span><br>
+                <span>这样能够更加准确地计算你的最终积分。</span>
+            </p>
+            <div class="box">
+                <p>
+                    <div class="level">
+                        <div class="level-left">
+                            <label class="level-item"  style="width: 15em;" for="p100">100积分对应奖品换算积分:</label>
+                            <div class="level-item">
+                                <input class="input" style="width: 10em" type="number" id="p100" name="p100" value="0" required><br>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="level">
+                        <div class="level-left">
+                            <label class="level-item" style="width: 15em" for="p300">300积分对应奖品换算积分:</label>
+                            <div class="level-item">
+                                <input class="input"style="width: 10em" type="number" id="p300" name="p300" value="0" required><br>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="level">
+                        <div class="level-left">
+                            <label class="level-item" style="width: 15em" for="p600">600积分对应奖品换算积分:</label>
+                            <div class="level-item">
+                                <input class="input"style="width: 10em" type="number" id="p600" name="p600" value="0" required><br>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="level">
+                        <div class="level-left">
+                            <label class="level-item" style="width: 15em" for="p1000">1000积分对应奖品换算积分:</label>
+                            <div class="level-item">
+                                <input class="input"style="width: 10em" type="number" id="p1000" name="p1000" value="0" required><br>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="level">
+                        <div class="level-left">
+                            <label class="level-item" style="width: 15em" for="p1500">1500积分对应奖品换算积分:</label>
+                            <div class="level-item">
+                                <input class="input"style="width: 10em" type="number" id="p1500" name="p1500" value="0" required><br>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="level">
+                        <div class="level-left">
+                            <label class="level-item" style="width: 15em" for="p2200">2200积分对应奖品换算积分:</label>
+                            <div class="level-item">
+                                <input class="input"style="width: 10em" type="number" id="p2200" name="p2200" value="0" required><br>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="level">
+                        <div class="level-left">
+                            <label class="level-item" style="width: 15em" for="p3000">3000积分对应奖品换算积分:</label>
+                            <div class="level-item">
+                                <input class="input"style="width: 10em" type="number" id="p3000" name="p3000" value="0" required><br>
+                            </div>
+                        </div>
+                    </div>
+                </p>
+
+                <nav class="level">
+                    <div class="level-left">
+                        <span class="level-item">👆一键填入</span>
+                        <div class="select level-item"><select id="gradePoints" name="gradePoints" required></select> </div>
+                        <span class="level-left">的奖品积分</span>
+                    </div>
+                </nav>
+                感谢 TapTap用户<a href="https://www.taptap.cn/user/61215902">此奶尚温</a> 所提供的数据。<span class="keypoint"> 问号"?"开头的为预测数据</span><br>
+            </div>
+
+            <div class="level">
+                <div class="level-left">
+                    <label class="level-item" for="pcurrent">现有积分(<span class="keypoint">每完成一轮记得加3000</span>):</label>
+                    <div class="level-item">
+                        <input class="input" style="width: 10em" type="number" id="pcurrent" name="pcurrent" value="0" required>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="level">
+    <div class="level-left">
+        <label class="level-item">
+            <span class="tooltip">
+                多少天后结束:
+                <span class="tooltiptext">
+                    例如: 当前是第一期纸飞机的第3天。<br>
+                    如果你要计算第一期纸飞机，则填 4。<br>
+                    如果你要计算第二期纸飞机，则填 11。<br>
+                </span>
+            </span>
+        </label>
+        <div class="level-item">
+            <input class="input" type="number" id="days" name="days" value="7" required>
+        </div>
+        <div class="level-item">
+            <button type="button" class="button" onclick="calculatePoints()">
+                <span class="icon"> <i class="fas fa-calculator"></i></span>
+                <span>计算积分</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="card" id="points_result">
+    <header class="card-header">
+        <p class="card-header-title">积分计算结果</p>
+        <button class="card-header-icon" aria-label="more options" onclick="toggleCard('points_result')">
+          <span class="icon">
+            <i class="fas fa-angle-down" aria-hidden="true"></i>
+          </span>
+        </button>
+    </header>
+
+    <div class="card-content collapsed">
+        <div class="content">
+            <div class="content">
+                <progress class="progress" id="points_process"></progress>
+                <span id="all_points" style="font-weight: bold;"></span><br>
+                <span id="cost_result" style="font-weight: bold;"></span><br>
+            </div>
+
+            <div class="card" id="points_detail">
+                <header class="card-header">
+                    <p class="card-header-title">积分详情</p>
+                    <button class="card-header-icon" aria-label="more options" onclick="toggleCard('points_detail')">
+                      <span class="icon">
+                        <i class="fas fa-angle-up" aria-hidden="true"></i>
+                      </span>
+                    </button>
+                </header>
+                <div class="card-content">
+                    <div class="content">
+                        <span id="pointsResult"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>
