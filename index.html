@@ -63,6 +63,11 @@
         .tooltip:hover .tooltiptext {
             visibility: visible;
         }
+
+        .max-width-img {
+            max-width: max(50%, 360px);
+            height: auto;
+        }
     </style>
     <link rel="stylesheet" href="https://bulma.io/vendor/fontawesome-free-6.5.2-web/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css">
@@ -613,7 +618,7 @@
             }
             var contentHtml = "<div class=\"block\">".concat(desc, "</div>");
             for (var i = 0; i < gp.img_num; i++) {
-                contentHtml += "<div class=\"block\"><img src=\"images/detail_".concat(gpIdx + 1, "_").concat(i + 1, ".webp\" class=\"image\"></div>");
+                contentHtml += "<div class=\"block\"><img class=\"image max-width-img\" src=\"images/detail_".concat(gpIdx + 1, "_").concat(i + 1, ".webp\"></div>");
             }
             document.getElementById("gradePointsDetailContent").innerHTML = contentHtml;
         }
