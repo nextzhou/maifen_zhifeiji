@@ -553,23 +553,25 @@
             return TotalResult;
         }());
         var GradePoints = /** @class */ (function () {
-            function GradePoints(name, points) {
+            function GradePoints(name, points, img_num) {
+                if (img_num === void 0) { img_num = 0; }
                 this.name = name;
                 this.points = points;
+                this.img_num = img_num;
             }
             return GradePoints;
         }());
         var PresetGradePoints = [
-            new GradePoints("第一期,技能自选", [30, 30, 50, 50, 70, 100, 100]),
-            new GradePoints("第二期,补风袋(收获能源概率翻倍)", [30, 30, 0, 60, 0, 90, 0]),
-            new GradePoints("第三期,宠物拼图自选", [20, 30, 0, 50, 0, 100, 0]),
-            new GradePoints("第四期,技能自选", [30, 30, 50, 50, 70, 100, 100]),
-            new GradePoints("第五期,蒙昧视界(收获卢恩概率翻倍)", [30, 30, 0, 60, 0, 90, 0]),
-            new GradePoints("第六期,宠物拼图自选", [20, 30, 0, 50, 0, 100, 0]),
-            new GradePoints("第七期,金骑宠自选积点", [10, 10, 14, 14, 14, 20, 20]),
-            new GradePoints("第八期,猫猫、技能自选", [30, 30, 50, 50, 70, 100, 100]),
-            new GradePoints("第九期,引路流萤(收获猫猫果木概率翻倍)、秘宝自选", [30, 30, 45, 60, 0, 90, 0]),
-            new GradePoints("?第十期,宠物拼图自选", [20, 30, 0, 50, 0, 100, 0]),
+            new GradePoints("第一期,技能自选", [30, 30, 50, 50, 70, 100, 100], 6),
+            new GradePoints("第二期,补风袋(收获能源概率翻倍)", [30, 30, 0, 60, 0, 90, 0], 12),
+            new GradePoints("第三期,宠物拼图自选", [20, 30, 0, 50, 0, 100, 0], 6),
+            new GradePoints("第四期,技能自选", [30, 30, 50, 50, 70, 100, 100], 6),
+            new GradePoints("第五期,蒙昧视界(收获卢恩概率翻倍)", [30, 30, 0, 60, 0, 90, 0], 12),
+            new GradePoints("第六期,宠物拼图自选", [20, 30, 0, 50, 0, 100, 0], 7),
+            new GradePoints("第七期,金骑宠自选积点", [10, 10, 14, 14, 14, 20, 20], 6),
+            new GradePoints("第八期,猫猫、技能自选", [30, 30, 50, 50, 70, 100, 100], 6),
+            new GradePoints("第九期,引路流萤(收获猫猫果木概率翻倍)、秘宝自选", [30, 30, 45, 60, 0, 90, 0], 6),
+            new GradePoints("?第十期,宠物拼图自选", [20, 30, 0, 50, 0, 100, 0], 2),
             new GradePoints("?第十一期,猫猫、骑兽自选", [10, 10, 14, 14, 14, 20, 20]),
             new GradePoints("?第十二期,密保自选", [30, 30, 45, 60, 0, 90, 0]),
             new GradePoints("?第十三期,技能自选", [30, 30, 50, 50, 70, 100, 100]),
@@ -591,13 +593,29 @@
             return options;
         }
         function fillGradePoints() {
-            var gpIdx = document.getElementById("gradePoints").value;
+            var gpIdx = parseInt(document.getElementById("gradePoints").value);
             var gp = PresetGradePoints[gpIdx];
             var ids = ["p100", "p300", "p600", "p1000", "p1500", "p2200", "p3000"];
             for (var i = 0; i < ids.length; i++) {
                 var id = ids[i];
                 document.getElementById(id).value = String(gp.points[i]);
             }
+            // 纸飞机详情图片展示
+            if (gp.img_num === 0) {
+                document.getElementById("gradePointsDetail").style.display = "none";
+                return;
+            }
+            document.getElementById("gradePointsDetail").style.display = "block";
+            document.getElementById("gradePointsDetailTitle").innerText = "纸飞机详情";
+            var desc = gp.name;
+            if (gp.name.startsWith("?")) {
+                desc = "".concat(gp.name.substring(1), "(\u9884\u6D4B\u6570\u636E\uFF0C\u8BF7\u4EE5\u5B9E\u9645\u4E3A\u51C6)");
+            }
+            var contentHtml = "<div class=\"block\">".concat(desc, "</div>");
+            for (var i = 0; i < gp.img_num; i++) {
+                contentHtml += "<div class=\"block\"><img src=\"images/detail_".concat(gpIdx + 1, "_").concat(i + 1, ".webp\" class=\"image\"></div>");
+            }
+            document.getElementById("gradePointsDetailContent").innerHTML = contentHtml;
         }
         function toggleCard(id) {
             var card = document.getElementById(id);
@@ -1038,7 +1056,25 @@
                         <span class="level-left">的奖品积分</span>
                     </div>
                 </nav>
-                感谢 TapTap用户<a href="https://www.taptap.cn/user/61215902" target="_blank">此奶尚温</a> 所提供的数据。<span class="keypoint"> 问号"?"开头的为预测数据</span><br>
+
+                <div class="card" id="gradePointsDetail" style="display: none">
+                    <header class="card-header">
+                        <p class="card-header-title" id="gradePointsDetailTitle">纸飞机详情: 加载中……</p>
+                        <button class="card-header-icon" aria-label="more options" onclick="toggleCard('gradePointsDetail')">
+                      <span class="icon">
+                        <i class="fas fa-angle-down" aria-hidden="true"></i>
+                      </span>
+                        </button>
+                    </header>
+
+                    <div class="card-content collapsed">
+                        <div class="content" id="gradePointsDetailContent">
+                            加载中……
+                        </div>
+                    </div>
+                </div>
+
+                感谢 TapTap用户<a href="https://www.taptap.cn/user/61215902" target="_blank">此奶尚温</a> 与 <a href="https://www.taptap.cn/user/579369593" target="_blank">麥芬紙飛機</a> 所提供的数据。<span class="keypoint"> 问号"?"开头的为预测数据</span><br>
             </div>
 
             <div class="level">
